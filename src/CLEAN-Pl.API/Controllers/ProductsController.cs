@@ -1,11 +1,14 @@
+using CLEAN_Pl.API.Attributes;
 using CLEAN_Pl.Application.DTOs.Product;
 using CLEAN_Pl.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CLEAN_Pl.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -19,17 +22,27 @@ public class ProductsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Get all products
+    /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [Permission("Product.Read")]
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
     {
         var products = await _productService.GetAllAsync();
         return Ok(products);
     }
 
+    /// <summary>
+    /// Get product by ID
+    /// </summary>
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [Permission("Product.Read")]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProductDto>> GetById(int id)
     {
         var product = await _productService.GetByIdAsync(id);
@@ -39,28 +52,43 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    /// <summary>
+    /// Create a new product
+    /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [Permission("Product.Create")]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProductDto>> Create([FromBody] CreateProductDto dto)
     {
         var product = await _productService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
+    /// <summary>
+    /// Update product
+    /// </summary>
     [HttpPut("{id}")]
+    [Permission("Product.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto dto)
     {
         await _productService.UpdateAsync(id, dto);
         return NoContent();
     }
 
+    /// <summary>
+    /// Delete product
+    /// </summary>
     [HttpDelete("{id}")]
+    [Permission("Product.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Delete(int id)
     {
         await _productService.DeleteAsync(id);

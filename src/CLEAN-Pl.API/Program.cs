@@ -1,78 +1,77 @@
-﻿using CLEAN_Pl.API.Middleware;
+﻿using CLEAN_Pl.API.Extensions;
+using CLEAN_Pl.API.Middleware;
+using CLEAN_Pl.API.Services;
 using CLEAN_Pl.Application;
 using CLEAN_Pl.Infrastructure;
-using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// =============================================================================
+// SERVICES CONFIGURATION
+// =============================================================================
+
+// Controllers
 builder.Services.AddControllers();
 
-// FluentValidation
-builder.Services.AddFluentValidationAutoValidation();
-
-// Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "CLEAN-PL API",
-        Version = "v1",
-        Description = "Clean Architecture API with .NET 10"
-    });
-});
-
-// Application Layer
+// Application & Infrastructure layers (Clean Architecture)
 builder.Services.AddApplication(builder.Configuration);
-
-// Infrastructure Layer
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+// Authentication & Authorization
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// Swagger Documentation
+builder.Services.AddSwaggerDocumentation();
+
+// CORS Policy
+builder.Services.AddCorsPolicy(builder.Configuration, builder.Environment);
+
+// Rate Limiting
+builder.Services.AddRateLimitingPolicy();
+
+// Health Checks
+builder.Services.AddHealthChecksConfiguration();
+
+// Database Seeder (Background Service - non-blocking)
+builder.Services.AddHostedService<DatabaseInitializerService>();
+
+// =============================================================================
+// APPLICATION PIPELINE
+// =============================================================================
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "CLEAN-PL API v1");
-        options.RoutePrefix = "swagger";
-    });
-}
-
-// Global Exception Handler
+// Global Exception Handler - MUST be first to catch all exceptions
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Development only: Swagger UI
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwaggerDocumentation();
+}
+
+// Security & CORS
 app.UseHttpsRedirection();
+app.UseCorsPolicy(app.Environment);
 
-app.UseCors("AllowAll");
+// Rate Limiting
+app.UseRateLimiter();
 
+// Authentication & Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
+// Endpoints
 app.MapControllers();
+app.MapHealthCheckEndpoints();
 
-// Health Check Endpoint
-app.MapHealthChecks("/health");
-
-app.MapGet("/", () => Results.Ok(new
+// API Info endpoint
+app.MapGet("/api", () => Results.Ok(new
 {
-    message = "CLEAN-PL API is running",
-    version = "1.0",
-    swagger = "/swagger"
-}))
-.WithName("Root");
+    message = "CLEAN-Pl API is running",
+    version = "v1",
+    documentation = "/swagger",
+    health = "/health"
+})).WithName("ApiInfo");
 
 app.Run();

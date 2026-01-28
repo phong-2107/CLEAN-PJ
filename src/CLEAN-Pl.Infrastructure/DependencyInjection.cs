@@ -36,6 +36,12 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+
+        // Database Seeder
+        services.AddScoped<DbSeeder>();
 
         return services;
     }

@@ -37,32 +37,55 @@ public class ExceptionHandlingMiddleware
         var response = context.Response;
         response.ContentType = "application/json";
 
-        object errorResponse = exception switch
-        {
-            NotFoundException notFoundEx => new
-            {
-                StatusCode = (int)HttpStatusCode.NotFound,
-                Message = notFoundEx.Message
-            },
-            DomainException domainEx => new
-            {
-                StatusCode = (int)HttpStatusCode.BadRequest,
-                Message = domainEx.Message
-            },
-            ValidationException validationEx => new
-            {
-                StatusCode = (int)HttpStatusCode.BadRequest,
-                Message = "Validation failed",
-                Errors = validationEx.Errors
-            },
-            _ => new
-            {
-                StatusCode = (int)HttpStatusCode.InternalServerError,
-                Message = "An internal server error occurred"
-            }
-        };
+        int statusCode;
+        object errorResponse;
 
-        response.StatusCode = (errorResponse as dynamic).StatusCode;
+        switch (exception)
+        {
+            case NotFoundException notFoundEx:
+                statusCode = (int)HttpStatusCode.NotFound;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = notFoundEx.Message
+                };
+                break;
+            case UnauthorizedException unauthorizedEx:
+                statusCode = (int)HttpStatusCode.Unauthorized;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = unauthorizedEx.Message
+                };
+                break;
+            case DomainException domainEx:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = domainEx.Message
+                };
+                break;
+            case ValidationException validationEx:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = "Validation failed",
+                    Errors = validationEx.Errors
+                };
+                break;
+            default:
+                statusCode = (int)HttpStatusCode.InternalServerError;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = "An internal server error occurred"
+                };
+                break;
+        }
+
+        response.StatusCode = statusCode;
         await response.WriteAsync(JsonSerializer.Serialize(errorResponse));
     }
 }

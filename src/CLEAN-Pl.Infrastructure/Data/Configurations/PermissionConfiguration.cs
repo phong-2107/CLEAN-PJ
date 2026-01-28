@@ -30,9 +30,6 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Domain.Entities.
         builder.HasIndex(p => p.Name).IsUnique();
         builder.HasIndex(p => new { p.Resource, p.Action }).IsUnique();
 
-        // Ignore computed properties
-        builder.Ignore(p => p.GetPermissionString());
-
         // Relationships
         builder.HasMany(p => p.RolePermissions)
             .WithOne(rp => rp.Permission)

@@ -9,8 +9,7 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
     private IDbContextTransaction? _transaction;
-    
-    // Lazy initialization for repositories
+
     private IProductRepository? _products;
     
     public UnitOfWork(ApplicationDbContext context)
