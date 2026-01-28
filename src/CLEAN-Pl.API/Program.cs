@@ -24,7 +24,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Application Layer
-builder.Services.AddApplication();
+builder.Services.AddApplication(builder.Configuration);
 
 // Infrastructure Layer
 builder.Services.AddInfrastructure(builder.Configuration);
