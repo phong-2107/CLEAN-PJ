@@ -64,6 +64,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Health Check Endpoint
+app.MapHealthChecks("/health");
+
 app.MapGet("/", () => Results.Ok(new
 {
     message = "CLEAN-PL API is running",

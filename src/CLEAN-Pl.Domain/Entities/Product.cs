@@ -11,10 +11,10 @@ public class Product : BaseEntity
     public int StockQuantity { get; private set; }
     public bool IsActive { get; private set; }
 
-    // Private constructor cho Entity Framework
+
     private Product() { }
 
-    // Factory method (SOLID: Single Responsibility)
+
     public static Product Create(string name, string description, decimal price, int stockQuantity)
     {
         ValidateName(name);
@@ -31,7 +31,7 @@ public class Product : BaseEntity
         };
     }
 
-    // Business logic methods
+
     public void UpdateDetails(string name, string description, decimal price)
     {
         ValidateName(name);
@@ -62,7 +62,7 @@ public class Product : BaseEntity
         SetUpdatedAt();
     }
 
-    // Validations (Domain rules)
+
     private static void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
