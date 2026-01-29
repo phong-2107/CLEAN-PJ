@@ -4,6 +4,7 @@ using CLEAN_Pl.Application.Exceptions;
 using CLEAN_Pl.Application.Interfaces;
 using CLEAN_Pl.Domain.Entities;
 using CLEAN_Pl.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace CLEAN_Pl.Application.Services;
 
@@ -12,19 +13,23 @@ public class RoleService : IRoleService
     private readonly IRoleRepository _roleRepository;
     private readonly IPermissionRepository _permissionRepository;
     private readonly IMapper _mapper;
+    private readonly ILogger<RoleService> _logger;
 
     public RoleService(
         IRoleRepository roleRepository,
         IPermissionRepository permissionRepository,
-        IMapper mapper)
+        IMapper mapper,
+        ILogger<RoleService> logger)
     {
         _roleRepository = roleRepository;
         _permissionRepository = permissionRepository;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<RoleDto>> GetAllAsync()
     {
+        // include inactive = false, chỉ lấy role active
         var roles = await _roleRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<RoleDto>>(roles);
     }
@@ -70,12 +75,17 @@ public class RoleService : IRoleService
     {
         var role = await _roleRepository.GetByIdAsync(id);
         if (role == null)
-            throw new NotFoundException($"Role with ID {id} not found");
+            throw new NotFoundException($"Role với ID {id} không tồn tại");
 
+        // QUAN TRỌNG: không cho xóa system role 
         if (role.IsSystemRole)
-            throw new ForbiddenException("Cannot delete system role");
+        {
+            _logger.LogWarning("Attempted to delete system role: {RoleName}", role.Name);
+            throw new ForbiddenException("Không thể xóa system role");
+        }
 
         await _roleRepository.DeleteAsync(id);
+        _logger.LogInformation("Role deleted: {RoleId} - {RoleName}", id, role.Name);
     }
 
     public async Task AssignPermissionAsync(int roleId, int permissionId)

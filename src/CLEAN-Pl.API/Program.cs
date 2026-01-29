@@ -6,9 +6,7 @@ using CLEAN_Pl.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =============================================================================
-// SERVICES CONFIGURATION
-// =============================================================================
+// --- Services setup ---
 
 // Controllers
 builder.Services.AddControllers();
@@ -35,9 +33,7 @@ builder.Services.AddHealthChecksConfiguration();
 // Database Seeder (Background Service - non-blocking)
 builder.Services.AddHostedService<DatabaseInitializerService>();
 
-// =============================================================================
-// APPLICATION PIPELINE
-// =============================================================================
+// --- Middleware pipeline ---
 
 var app = builder.Build();
 

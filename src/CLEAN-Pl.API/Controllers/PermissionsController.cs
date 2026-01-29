@@ -22,9 +22,7 @@ public class PermissionsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all permissions
-    /// </summary>
+    // lấy all permissions - read-only, không có CRUD vì permissions được seed từ DB
     [HttpGet]
     [Permission("Permission.Read")]
     [ProducesResponseType(typeof(IEnumerable<PermissionDto>), StatusCodes.Status200OK)]
@@ -35,9 +33,7 @@ public class PermissionsController : ControllerBase
         return Ok(permissions);
     }
 
-    /// <summary>
     /// Get permission by ID
-    /// </summary>
     [HttpGet("{id}")]
     [Permission("Permission.Read")]
     [ProducesResponseType(typeof(PermissionDto), StatusCodes.Status200OK)]
@@ -52,9 +48,7 @@ public class PermissionsController : ControllerBase
         return Ok(permission);
     }
 
-    /// <summary>
-    /// Get permissions by resource
-    /// </summary>
+    // lấy permissions theo resource
     [HttpGet("resource/{resource}")]
     [Permission("Permission.Read")]
     [ProducesResponseType(typeof(IEnumerable<PermissionDto>), StatusCodes.Status200OK)]

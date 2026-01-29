@@ -5,6 +5,8 @@ using CLEAN_Pl.Domain.Exceptions;
 
 namespace CLEAN_Pl.API.Middleware;
 
+// Global exception handler - QUAN TRỌNG: đặt đầu tiên trong pipeline!
+// Catch tất cả exception để trả về JSON thay vì HTML error page
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -44,19 +46,13 @@ public class ExceptionHandlingMiddleware
         {
             case NotFoundException notFoundEx:
                 statusCode = (int)HttpStatusCode.NotFound;
-                errorResponse = new
-                {
-                    StatusCode = statusCode,
-                    Message = notFoundEx.Message
-                };
+                errorResponse = new { StatusCode = statusCode, Message = notFoundEx.Message };
                 break;
+                
             case UnauthorizedException unauthorizedEx:
+                // KHÔNG log chi tiết exception vì có thể leak thông tin user
                 statusCode = (int)HttpStatusCode.Unauthorized;
-                errorResponse = new
-                {
-                    StatusCode = statusCode,
-                    Message = unauthorizedEx.Message
-                };
+                errorResponse = new { StatusCode = statusCode, Message = unauthorizedEx.Message };
                 break;
             case DomainException domainEx:
                 statusCode = (int)HttpStatusCode.BadRequest;
@@ -76,12 +72,10 @@ public class ExceptionHandlingMiddleware
                 };
                 break;
             default:
+                // QUAN TRỌNG: không trả về exception.Message cho production!
+                // có thể leak stack trace hoặc info nhạy cảm
                 statusCode = (int)HttpStatusCode.InternalServerError;
-                errorResponse = new
-                {
-                    StatusCode = statusCode,
-                    Message = "An internal server error occurred"
-                };
+                errorResponse = new { StatusCode = statusCode, Message = "Có lỗi xảy ra. Vui lòng thử lại sau." };
                 break;
         }
 

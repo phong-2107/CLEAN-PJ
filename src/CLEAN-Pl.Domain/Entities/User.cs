@@ -6,7 +6,7 @@ namespace CLEAN_Pl.Domain.Entities;
 public class User : AuditableEntity
 {
     public string Username { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
+    public string Email { get; private set; } = "";
     public string PasswordHash { get; private set; } = string.Empty;
     public string? FirstName { get; private set; }
     public string? LastName { get; private set; }
@@ -16,11 +16,11 @@ public class User : AuditableEntity
     public string? RefreshToken { get; private set; }
     public DateTime? RefreshTokenExpiryTime { get; private set; }
 
-    // Navigation properties
     public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
 
-    // Computed property
-    public string FullName => $"{FirstName} {LastName}".Trim();
+    public string FullName => string.IsNullOrEmpty(FirstName) && string.IsNullOrEmpty(LastName)
+        ? Username
+        : $"{FirstName} {LastName}".Trim();
 
     private User() { }
 
@@ -111,15 +111,15 @@ public class User : AuditableEntity
                && RefreshTokenExpiryTime.Value > DateTime.UtcNow;
     }
 
-    // Validations
+    // --- Validation methods ---
     private static void ValidateUsername(string username)
     {
         if (string.IsNullOrWhiteSpace(username))
             throw new DomainException("Username is required");
-
         if (username.Length < 3 || username.Length > 50)
             throw new DomainException("Username must be between 3 and 50 characters");
 
+        // chỉ cho phép alphanumeric + underscore 
         if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9_]+$"))
             throw new DomainException("Username can only contain letters, numbers, and underscores");
     }

@@ -20,9 +20,7 @@ public class UsersController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all users
-    /// </summary>
+    // lấy tất cả users 
     [HttpGet]
     [Permission("User.Read")]
     [ProducesResponseType(typeof(IEnumerable<UserDto>), StatusCodes.Status200OK)]
@@ -33,9 +31,8 @@ public class UsersController : ControllerBase
         return Ok(users);
     }
 
-    /// <summary>
+
     /// Get user by ID
-    /// </summary>
     [HttpGet("{id}")]
     [Permission("User.Read")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -50,9 +47,8 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    /// <summary>
+
     /// Create a new user
-    /// </summary>
     [HttpPost]
     [Permission("User.Create")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
@@ -64,9 +60,8 @@ public class UsersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
     }
 
-    /// <summary>
+
     /// Update user
-    /// </summary>
     [HttpPut("{id}")]
     [Permission("User.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -79,9 +74,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Delete user
-    /// </summary>
+    // xóa user - chỉ admin mới được xóa
     [HttpDelete("{id}")]
     [Permission("User.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -93,9 +86,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
     /// Assign role to user
-    /// </summary>
     [HttpPost("{userId}/roles/{roleId}")]
     [Permission("User.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -107,9 +98,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
     /// Remove role from user
-    /// </summary>
     [HttpDelete("{userId}/roles/{roleId}")]
     [Permission("User.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -121,9 +110,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
     /// Get user permissions
-    /// </summary>
     [HttpGet("{id}/permissions")]
     [Permission("User.Read")]
     [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]

@@ -20,9 +20,7 @@ public class RolesController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all roles
-    /// </summary>
+    // lấy all roles
     [HttpGet]
     [Permission("Role.Read")]
     [ProducesResponseType(typeof(IEnumerable<RoleDto>), StatusCodes.Status200OK)]
@@ -33,9 +31,7 @@ public class RolesController : ControllerBase
         return Ok(roles);
     }
 
-    /// <summary>
     /// Get role by ID
-    /// </summary>
     [HttpGet("{id}")]
     [Permission("Role.Read")]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
@@ -50,9 +46,7 @@ public class RolesController : ControllerBase
         return Ok(role);
     }
 
-    /// <summary>
     /// Create a new role
-    /// </summary>
     [HttpPost]
     [Permission("Role.Create")]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status201Created)]
@@ -64,9 +58,7 @@ public class RolesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
     }
 
-    /// <summary>
     /// Update role
-    /// </summary>
     [HttpPut("{id}")]
     [Permission("Role.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -79,9 +71,7 @@ public class RolesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Delete role
-    /// </summary>
+    // xóa role - KHÔNG cho xóa system role
     [HttpDelete("{id}")]
     [Permission("Role.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -93,9 +83,7 @@ public class RolesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
     /// Assign permission to role
-    /// </summary>
     [HttpPost("{roleId}/permissions/{permissionId}")]
     [Permission("Role.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -107,9 +95,7 @@ public class RolesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
     /// Remove permission from role
-    /// </summary>
     [HttpDelete("{roleId}/permissions/{permissionId}")]
     [Permission("Role.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

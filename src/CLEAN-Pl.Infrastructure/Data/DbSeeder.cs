@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace CLEAN_Pl.Infrastructure.Data;
 
 /// <summary>
-/// Database seeder for initial data setup.
-/// Only seeds data if tables are empty - safe to run multiple times.
+/// Seed dữ liệu ban đầu cho DB
+/// NOTE: chỉ seed nếu table rỗng
 /// </summary>
 public class DbSeeder
 {
@@ -75,7 +75,7 @@ public class DbSeeder
         await _context.Permissions.AddRangeAsync(permissions);
         await _context.SaveChangesAsync();
         
-        _logger?.LogInformation("Seeded {Count} permissions successfully.", permissions.Count);
+        _logger?.LogInformation("Seeded {Count} permissions.", permissions.Count);
         return true;
     }
 
@@ -152,9 +152,8 @@ public class DbSeeder
             return false;
         }
 
-        _logger?.LogInformation("Seeding default admin user...");
+        _logger?.LogInformation("Seeding default admin...");
 
-        // Create default admin user
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
         var adminUser = User.Create("admin", "admin@cleanpl.com", passwordHash, "System", "Administrator");
         adminUser.ConfirmEmail();

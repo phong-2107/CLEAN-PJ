@@ -3,13 +3,14 @@ using CLEAN_Pl.Domain.Exceptions;
 
 namespace CLEAN_Pl.Domain.Entities;
 
+
 public class Product : BaseEntity
 {
-    public string Name { get; private set; } = string.Empty;
+    public string Name { get; private set; } = "";  
     public string Description { get; private set; } = string.Empty;
-    public decimal Price { get; private set; }
+    public decimal Price { get; private set; }  
     public int StockQuantity { get; private set; }
-    public bool IsActive { get; private set; }
+    public bool IsActive { get; private set; }  
 
 
     private Product() { }
@@ -66,21 +67,21 @@ public class Product : BaseEntity
     private static void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Product name is required");
+            throw new DomainException("Tên sản phẩm không được trống");
 
         if (name.Length > 200)
-            throw new DomainException("Product name cannot exceed 200 characters");
+            throw new DomainException("Tên sản phẩm không quá 200 ký tự");
     }
 
     private static void ValidatePrice(decimal price)
     {
         if (price < 0)
-            throw new DomainException("Price cannot be negative");
+            throw new DomainException("Giá không thể âm");
     }
 
     private static void ValidateStockQuantity(int quantity)
     {
         if (quantity < 0)
-            throw new DomainException("Stock quantity cannot be negative");
+            throw new DomainException("Số lượng tồn kho không thể âm");
     }
 }

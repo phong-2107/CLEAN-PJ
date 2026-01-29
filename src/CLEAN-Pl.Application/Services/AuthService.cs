@@ -5,6 +5,7 @@ using CLEAN_Pl.Application.Exceptions;
 using CLEAN_Pl.Application.Interfaces;
 using CLEAN_Pl.Domain.Entities;
 using CLEAN_Pl.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace CLEAN_Pl.Application.Services;
@@ -12,65 +13,83 @@ namespace CLEAN_Pl.Application.Services;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRoleRepository _roleRepository;
     private readonly IJwtTokenService _tokenService;
     private readonly IMapper _mapper;
     private readonly JwtSettings _jwtSettings;
+    private readonly ILogger<AuthService> _logger;
+
+    // TODO: move to config
+    private const string DefaultRoleName = "User";
 
     public AuthService(
         IUserRepository userRepository,
+        IRoleRepository roleRepository,
         IJwtTokenService tokenService,
         IMapper mapper,
-        IOptions<JwtSettings> jwtSettings)
+        IOptions<JwtSettings> jwtSettings,
+        ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
+        _roleRepository = roleRepository;
         _tokenService = tokenService;
         _mapper = mapper;
         _jwtSettings = jwtSettings.Value;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        // Check if username exists
+        // check username first
         if (await _userRepository.UsernameExistsAsync(dto.Username))
             throw new DuplicateException("User", nameof(dto.Username), dto.Username);
 
-        // Check if email exists
         if (await _userRepository.EmailExistsAsync(dto.Email))
             throw new DuplicateException("User", nameof(dto.Email), dto.Email);
 
-        // Hash password
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-        // Create user
         var user = User.Create(dto.Username, dto.Email, passwordHash, dto.FirstName, dto.LastName);
         await _userRepository.AddAsync(user);
 
-        // Assign default "User" role (you need to ensure this role exists)
+        // NOTE: phải ensure role "User" exists trong DB seed, không thì register sẽ fail
+        // đã bị bug này 1 lần khi deploy lên staging
         var defaultRole = await GetOrCreateDefaultUserRole();
         await _userRepository.AddUserRoleAsync(UserRole.Create(user.Id, defaultRole.Id));
+
+        _logger.LogInformation("New user registered: {Username}", dto.Username);
 
         return await GenerateAuthResponse(user);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
-        // Find user by username or email
         var user = await _userRepository.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
         if (user == null)
+        {
+            // log failed attempts 
+            // KHÔNG log password, chỉ log identifier
+            _logger.LogWarning("Failed login attempt for: {UsernameOrEmail}", dto.UsernameOrEmail);
             throw new UnauthorizedException("Invalid credentials");
+        }
 
-        // Verify password
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        {
+            _logger.LogWarning("Invalid password for user: {UserId}", user.Id);
             throw new UnauthorizedException("Invalid credentials");
+        }
 
-        // Check if user is active
+        // edge case: admin deactivate user nhưng user vẫn có token cũ
         if (!user.IsActive)
+        {
+            _logger.LogWarning("Deactivated user attempted login: {UserId}", user.Id);
             throw new UnauthorizedException("Account is deactivated");
+        }
 
-        // Update last login
         user.UpdateLastLogin();
         await _userRepository.UpdateAsync(user);
 
+        _logger.LogInformation("User logged in: {UserId}", user.Id);
         return await GenerateAuthResponse(user);
     }
 
@@ -149,8 +168,16 @@ public class AuthService : IAuthService
 
     private async Task<Role> GetOrCreateDefaultUserRole()
     {
-        // This is a placeholder - implement role repository method
-        // For now, assume role with ID 1 is "User" role
-        throw new NotImplementedException("Implement default role retrieval");
+        // tìm role "User" - nếu không có thì throw error vì DB seed chưa chạy
+        var role = await _roleRepository.GetByNameAsync(DefaultRoleName);
+
+        if (role == null)
+        {
+            _logger.LogError("Default role '{RoleName}' not found! Did you run DB seed?", DefaultRoleName);
+            throw new InvalidOperationException(
+                $"Role '{DefaultRoleName}' không tồn tại. Chạy database seed trước.");
+        }
+
+        return role;
     }
 }

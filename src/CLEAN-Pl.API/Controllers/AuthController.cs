@@ -56,7 +56,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Logout (revoke refresh token)
+    /// Logout - xóa refresh token
     /// </summary>
     [Authorize]
     [HttpPost("logout")]
@@ -64,13 +64,22 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout()
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        // lấy userId từ JWT claim
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        // edge case: nếu token không có userId claim (token cũ hoặc bị tamper)
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("Logout failed: invalid userId claim");
+            return Unauthorized();
+        }
+        
         await _authService.RevokeTokenAsync(userId);
         return NoContent();
     }
 
     /// <summary>
-    /// Change password
+    /// Đổi password - cần đăng nhập
     /// </summary>
     [Authorize]
     [HttpPost("change-password")]
@@ -79,8 +88,15 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+        
         await _authService.ChangePasswordAsync(userId, dto);
+        
+        // tạm thời không revoke, để user quyết định logout
         return NoContent();
     }
 
