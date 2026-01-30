@@ -1,4 +1,5 @@
 using AutoMapper;
+using CLEAN_Pl.Application.Common;
 using CLEAN_Pl.Application.DTOs.Product;
 using CLEAN_Pl.Application.Exceptions;
 using CLEAN_Pl.Application.Interfaces;
@@ -28,6 +29,25 @@ public class ProductService : IProductService
     {
         var products = await _unitOfWork.Products.GetAllAsync();
         return _mapper.Map<IEnumerable<ProductDto>>(products);
+    }
+
+    public async Task<PagedResult<ProductDto>> GetPagedAsync(ProductQueryParameters parameters)
+    {
+        var (items, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            parameters.PageNumber,
+            parameters.PageSize,
+            parameters.SearchTerm,
+            parameters.MinPrice,
+            parameters.MaxPrice,
+            parameters.IsActive,
+            parameters.InStock,
+            parameters.SortBy,
+            parameters.SortDescending
+        );
+
+        var dtos = _mapper.Map<IEnumerable<ProductDto>>(items);
+        
+        return new PagedResult<ProductDto>(dtos, totalCount, parameters.PageNumber, parameters.PageSize);
     }
 
     public async Task<ProductDto?> GetByIdAsync(int id)
@@ -72,7 +92,6 @@ public class ProductService : IProductService
 
     public async Task DeleteAsync(int id)
     {
-        // check exists trước khi delete - tránh exception từ DB
         var exists = await _unitOfWork.Products.ExistsAsync(id);
         if (!exists)
         {
@@ -85,3 +104,4 @@ public class ProductService : IProductService
         _logger.LogInformation("Product deleted: {ProductId}", id);
     }
 }
+

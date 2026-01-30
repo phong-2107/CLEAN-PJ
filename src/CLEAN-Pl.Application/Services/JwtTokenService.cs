@@ -29,12 +29,9 @@ public class JwtTokenService : IJwtTokenService
             new("FullName", user.FullName),
         };
 
-        // Add roles
+        // Add roles to token
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-        // Add permissions
-        claims.AddRange(permissions.Select(permission => new Claim("Permission", permission)));
-
+        
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
