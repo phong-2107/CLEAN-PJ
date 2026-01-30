@@ -5,6 +5,14 @@ namespace CLEAN_Pl.Domain.Interfaces;
 public interface IUserRepository
 {
     Task<IEnumerable<User>> GetAllAsync(bool includeInactive = false);
+    Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? searchTerm = null,
+        bool? isActive = null,
+        int? roleId = null,
+        string? sortBy = null,
+        bool sortDescending = false);
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetByEmailAsync(string email);

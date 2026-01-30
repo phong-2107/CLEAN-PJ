@@ -29,6 +29,54 @@ public class UserRepository : IUserRepository
             .ToListAsync();
     }
 
+    public async Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? searchTerm = null,
+        bool? isActive = null,
+        int? roleId = null,
+        string? sortBy = null,
+        bool sortDescending = false)
+    {
+        var query = _context.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.ToLower();
+            query = query.Where(u =>
+                u.Username.ToLower().Contains(search) ||
+                u.Email.ToLower().Contains(search) ||
+                (u.FirstName != null && u.FirstName.ToLower().Contains(search)) ||
+                (u.LastName != null && u.LastName.ToLower().Contains(search)));
+        }
+
+        if (isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
+
+        if (roleId.HasValue)
+            query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId.Value));
+
+        var totalCount = await query.CountAsync();
+        query = sortBy?.ToLower() switch
+        {
+            "username" => sortDescending ? query.OrderByDescending(u => u.Username) : query.OrderBy(u => u.Username),
+            "email" => sortDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+            "createdat" => sortDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+            _ => query.OrderByDescending(u => u.CreatedAt)
+        };
+
+        // Pagination
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
     public async Task<User?> GetByIdAsync(int id)
     {
         return await _context.Users

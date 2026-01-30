@@ -23,6 +23,10 @@ public static class DependencyInjection
         // JWT Settings
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
+        // Memory Cache for permissions
+        services.AddMemoryCache();
+        services.AddScoped<IPermissionCacheService, PermissionCacheService>();
+
         // Services
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();

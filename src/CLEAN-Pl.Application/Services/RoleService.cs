@@ -42,21 +42,46 @@ public class RoleService : IRoleService
         if (await _unitOfWork.Roles.NameExistsAsync(dto.Name))
             throw new DuplicateException("Role", nameof(dto.Name), dto.Name);
 
-        var role = Role.Create(dto.Name, dto.Description);
-        await _unitOfWork.Roles.AddAsync(role);
-
-        // Assign permissions
-        foreach (var permissionId in dto.PermissionIds)
+        await _unitOfWork.BeginTransactionAsync();
+        
+        try
         {
-            if (!await _unitOfWork.Permissions.ExistsAsync(permissionId))
-                throw new NotFoundException($"Permission with ID {permissionId} not found");
+            var role = Role.Create(dto.Name, dto.Description);
+            await _unitOfWork.Roles.AddAsync(role);
+            await _unitOfWork.CompleteAsync();
 
-            await _unitOfWork.Roles.AddRolePermissionAsync(
-                RolePermission.Create(role.Id, permissionId));
+            var permissionStrings = new List<string>();
+            if (dto.PermissionIds.Any())
+            {
+                foreach (var permissionId in dto.PermissionIds)
+                {
+                    var permission = await _unitOfWork.Permissions.GetByIdAsync(permissionId);
+                    if (permission == null)
+                        throw new NotFoundException($"Permission with ID {permissionId} not found");
+
+                    permissionStrings.Add(permission.GetPermissionString());
+                    await _unitOfWork.Roles.AddRolePermissionAsync(
+                        RolePermission.Create(role.Id, permissionId));
+                }
+            }
+
+            await _unitOfWork.CommitAsync();
+            
+            return new RoleDto
+            {
+                Id = role.Id,
+                Name = role.Name,
+                Description = role.Description,
+                IsActive = role.IsActive,
+                IsSystemRole = role.IsSystemRole,
+                Permissions = permissionStrings
+            };
         }
-
-        await _unitOfWork.CompleteAsync();
-        return _mapper.Map<RoleDto>(role);
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task UpdateAsync(int id, CreateRoleDto dto)
