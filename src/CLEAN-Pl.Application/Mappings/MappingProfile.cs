@@ -14,6 +14,7 @@ public class MappingProfile : Profile
     {
         // Product mappings
         CreateMap<Product, ProductDto>();
+        CreateMap<Product, ProductListDto>();
         CreateMap<CreateProductDto, Product>();
         CreateMap<UpdateProductDto, Product>();
 
@@ -21,12 +22,13 @@ public class MappingProfile : Profile
         CreateMap<User, UserDto>()
             .ForMember(dest => dest.Roles,
                 opt => opt.MapFrom(src => src.UserRoles.Select(ur => ur.Role.Name)));
+        
+        CreateMap<User, UserListDto>();
 
         CreateMap<User, AuthResponseDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Roles,
                 opt => opt.MapFrom(src => src.UserRoles.Select(ur => ur.Role.Name)))
-            .ForMember(dest => dest.Permissions, opt => opt.Ignore())
             .ForMember(dest => dest.AccessToken, opt => opt.Ignore())
             .ForMember(dest => dest.RefreshToken, opt => opt.Ignore())
             .ForMember(dest => dest.TokenExpiresAt, opt => opt.Ignore());
