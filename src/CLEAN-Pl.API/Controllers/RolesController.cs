@@ -31,7 +31,7 @@ public class RolesController : ControllerBase
         return Ok(roles);
     }
 
-    /// Get role by ID
+    // Get role by ID
     [HttpGet("{id}")]
     [Permission("Role.Read")]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
@@ -46,7 +46,7 @@ public class RolesController : ControllerBase
         return Ok(role);
     }
 
-    /// Create a new role
+    // Create a new role
     [HttpPost]
     [Permission("Role.Create")]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status201Created)]
@@ -58,7 +58,7 @@ public class RolesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
     }
 
-    /// Update role
+    // Update role
     [HttpPut("{id}")]
     [Permission("Role.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -83,7 +83,7 @@ public class RolesController : ControllerBase
         return NoContent();
     }
 
-    /// Assign permission to role
+    // Assign permission to role
     [HttpPost("{roleId}/permissions/{permissionId}")]
     [Permission("Role.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -95,7 +95,7 @@ public class RolesController : ControllerBase
         return NoContent();
     }
 
-    /// Remove permission from role
+    // Remove permission from role
     [HttpDelete("{roleId}/permissions/{permissionId}")]
     [Permission("Role.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

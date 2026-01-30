@@ -11,11 +11,16 @@ namespace CLEAN_Pl.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IPermissionCacheService _cacheService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService, 
+        IPermissionCacheService cacheService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
@@ -58,8 +63,6 @@ public class AuthController : ControllerBase
     {
         // lấy userId từ JWT claim
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
-        // edge case: nếu token không có userId claim (token cũ hoặc bị tamper)
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
         {
             _logger.LogWarning("Logout failed: invalid userId claim");
@@ -85,8 +88,6 @@ public class AuthController : ControllerBase
         }
         
         await _authService.ChangePasswordAsync(userId, dto);
-        
-        // tạm thời không revoke, để user quyết định logout
         return NoContent();
     }
 
@@ -100,16 +101,32 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var username = User.FindFirstValue(ClaimTypes.Name);
         var email = User.FindFirstValue(ClaimTypes.Email);
+        var fullName = User.FindFirstValue("FullName");
         var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value);
-        var permissions = User.FindAll("Permission").Select(c => c.Value);
 
         return Ok(new
         {
             UserId = userId,
             Username = username,
             Email = email,
-            Roles = roles,
-            Permissions = permissions
+            FullName = fullName,
+            Roles = roles
         });
+    }
+
+    [Authorize]
+    [HttpGet("me/permissions")]
+    [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<string>>> GetCurrentUserPermissions()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var permissions = await _cacheService.GetUserPermissionsAsync(userId);
+        return Ok(permissions);
     }
 }

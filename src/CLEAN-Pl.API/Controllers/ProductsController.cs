@@ -1,4 +1,5 @@
 using CLEAN_Pl.API.Attributes;
+using CLEAN_Pl.Application.Common;
 using CLEAN_Pl.Application.DTOs.Product;
 using CLEAN_Pl.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,16 @@ public class ProductsController : ControllerBase
     {
         _productService = productService;
         _logger = logger;
+    }
+
+    [HttpGet("paged")]
+    [Permission("Product.Read")]
+    [ProducesResponseType(typeof(PagedResult<ProductDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedResult<ProductDto>>> GetPaged([FromQuery] ProductQueryParameters parameters)
+    {
+        var result = await _productService.GetPagedAsync(parameters);
+        return Ok(result);
     }
 
     // Lấy tất cả products

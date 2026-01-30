@@ -1,4 +1,5 @@
 ﻿using CLEAN_Pl.API.Attributes;
+using CLEAN_Pl.Application.Common;
 using CLEAN_Pl.Application.DTOs.User;
 using CLEAN_Pl.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,16 @@ public class UsersController : ControllerBase
     {
         _userService = userService;
         _logger = logger;
+    }
+
+    [HttpGet("paged")]
+    [Permission("User.Read")]
+    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedResult<UserDto>>> GetPaged([FromQuery] UserQueryParameters parameters)
+    {
+        var result = await _userService.GetPagedAsync(parameters);
+        return Ok(result);
     }
 
     // lấy tất cả users 
