@@ -22,7 +22,7 @@ public class ProductsController : ControllerBase
         _logger = logger;
     }
 
-    /// Lấy tất cả products
+    // Lấy tất cả products
     [HttpGet]
     [Permission("Product.Read")]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
@@ -34,7 +34,7 @@ public class ProductsController : ControllerBase
     }
 
   
-    /// Get product by ID
+    // Get product by ID
     [HttpGet("{id}")]
     [Permission("Product.Read")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
@@ -49,7 +49,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    /// Create a new product
+    // Create a new product
     [HttpPost]
     [Permission("Product.Create")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
@@ -61,7 +61,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
-    /// Update product
+    // Update product
     [HttpPut("{id}")]
     [Permission("Product.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -74,7 +74,7 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    /// Xóa product (hard delete)
+    // Xóa product (hard delete)
     [HttpDelete("{id}")]
     [Permission("Product.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

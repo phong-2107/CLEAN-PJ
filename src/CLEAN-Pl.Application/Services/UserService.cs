@@ -10,19 +10,16 @@ namespace CLEAN_Pl.Application.Services;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IRoleRepository _roleRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
-        IUserRepository userRepository,
-        IRoleRepository roleRepository,
+        IUnitOfWork unitOfWork,
         IMapper mapper,
         ILogger<UserService> logger)
     {
-        _userRepository = userRepository;
-        _roleRepository = roleRepository;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
     }
@@ -30,88 +27,93 @@ public class UserService : IUserService
     public async Task<IEnumerable<UserDto>> GetAllAsync()
     {
         // TODO: thêm pagination
-        var users = await _userRepository.GetAllAsync();
+        var users = await _unitOfWork.Users.GetAllAsync();
         return _mapper.Map<IEnumerable<UserDto>>(users);
     }
 
     public async Task<UserDto?> GetByIdAsync(int id)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await _unitOfWork.Users.GetByIdAsync(id);
         return user == null ? null : _mapper.Map<UserDto>(user);
     }
 
     public async Task<UserDto> CreateAsync(CreateUserDto dto)
     {
-        // check username trước - thông báo lỗi dễ hiểu hơn cho user
-        if (await _userRepository.UsernameExistsAsync(dto.Username))
+        // check username trước - thông báo lỗi
+        if (await _unitOfWork.Users.UsernameExistsAsync(dto.Username))
             throw new DuplicateException("User", nameof(dto.Username), dto.Username);
 
-        if (await _userRepository.EmailExistsAsync(dto.Email))
+        if (await _unitOfWork.Users.EmailExistsAsync(dto.Email))
             throw new DuplicateException("User", nameof(dto.Email), dto.Email);
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         var user = User.Create(dto.Username, dto.Email, passwordHash, dto.FirstName, dto.LastName);
-        await _userRepository.AddAsync(user);
+        await _unitOfWork.Users.AddAsync(user);
 
-        // assign roles - nếu roleId không tồn tại thì báo lỗi rõ ràng
+        // assign roles - nếu roleId không tồn tại thì báo lỗi 
         if (dto.RoleIds != null && dto.RoleIds.Any())
         {
             foreach (var roleId in dto.RoleIds)
             {
-                if (!await _roleRepository.ExistsAsync(roleId))
+                if (!await _unitOfWork.Roles.ExistsAsync(roleId))
                 {
                     _logger.LogWarning("CreateUser: Role {RoleId} not found", roleId);
                     throw new NotFoundException($"Role với ID {roleId} không tồn tại");
                 }
-                await _userRepository.AddUserRoleAsync(UserRole.Create(user.Id, roleId));
+                await _unitOfWork.Users.AddUserRoleAsync(UserRole.Create(user.Id, roleId));
             }
         }
 
+        await _unitOfWork.CompleteAsync();
         _logger.LogInformation("User created: {Username} (ID: {UserId})", dto.Username, user.Id);
         return _mapper.Map<UserDto>(user);
     }
 
     public async Task UpdateAsync(int id, UpdateUserDto dto)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await _unitOfWork.Users.GetByIdAsync(id);
         if (user == null)
             throw new NotFoundException($"User with ID {id} not found");
 
         user.UpdateProfile(dto.FirstName ?? string.Empty, dto.LastName ?? string.Empty, dto.Email);
-        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.CompleteAsync();
     }
 
     public async Task DeleteAsync(int id)
     {
-        var exists = await _userRepository.ExistsAsync(id);
+        var exists = await _unitOfWork.Users.ExistsAsync(id);
         if (!exists)
             throw new NotFoundException($"User with ID {id} not found");
 
-        await _userRepository.DeleteAsync(id);
+        await _unitOfWork.Users.DeleteAsync(id);
+        await _unitOfWork.CompleteAsync();
     }
 
     public async Task AssignRoleAsync(int userId, int roleId)
     {
-        if (!await _userRepository.ExistsAsync(userId))
+        if (!await _unitOfWork.Users.ExistsAsync(userId))
             throw new NotFoundException($"User with ID {userId} not found");
 
-        if (!await _roleRepository.ExistsAsync(roleId))
+        if (!await _unitOfWork.Roles.ExistsAsync(roleId))
             throw new NotFoundException($"Role with ID {roleId} not found");
 
-        await _userRepository.AddUserRoleAsync(UserRole.Create(userId, roleId));
+        await _unitOfWork.Users.AddUserRoleAsync(UserRole.Create(userId, roleId));
+        await _unitOfWork.CompleteAsync();
     }
 
     public async Task RemoveRoleAsync(int userId, int roleId)
     {
-        if (!await _userRepository.ExistsAsync(userId))
+        if (!await _unitOfWork.Users.ExistsAsync(userId))
             throw new NotFoundException($"User with ID {userId} not found");
 
-        await _userRepository.RemoveUserRoleAsync(userId, roleId);
+        await _unitOfWork.Users.RemoveUserRoleAsync(userId, roleId);
+        await _unitOfWork.CompleteAsync();
     }
 
     public async Task<IEnumerable<string>> GetUserPermissionsAsync(int userId)
     {
-        var permissions = await _userRepository.GetUserPermissionsAsync(userId);
+        var permissions = await _unitOfWork.Users.GetUserPermissionsAsync(userId);
         return permissions.Select(p => p.GetPermissionString());
     }
 }

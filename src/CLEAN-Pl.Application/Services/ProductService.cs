@@ -10,23 +10,23 @@ namespace CLEAN_Pl.Application.Services;
 
 public class ProductService : IProductService
 {
-    private readonly IProductRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<ProductService> _logger;
 
     public ProductService(
-        IProductRepository repository,
+        IUnitOfWork unitOfWork,
         IMapper mapper,
         ILogger<ProductService> logger)
     {
-        _repository = repository;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
     }
 
     public async Task<IEnumerable<ProductDto>> GetAllAsync()
     {
-        var products = await _repository.GetAllAsync();
+        var products = await _unitOfWork.Products.GetAllAsync();
         return _mapper.Map<IEnumerable<ProductDto>>(products);
     }
 
@@ -39,14 +39,15 @@ public class ProductService : IProductService
             return null;
         }
 
-        var product = await _repository.GetByIdAsync(id);
+        var product = await _unitOfWork.Products.GetByIdAsync(id);
         return product == null ? null : _mapper.Map<ProductDto>(product);
     }
 
     public async Task<ProductDto> CreateAsync(CreateProductDto dto)
     {
         var product = Product.Create(dto.Name, dto.Description, dto.Price, dto.StockQuantity);
-        var createdProduct = await _repository.AddAsync(product);
+        var createdProduct = await _unitOfWork.Products.AddAsync(product);
+        await _unitOfWork.CompleteAsync();
 
         _logger.LogInformation("Product created: {ProductId} - {ProductName}", createdProduct.Id, createdProduct.Name);
         return _mapper.Map<ProductDto>(createdProduct);
@@ -54,7 +55,7 @@ public class ProductService : IProductService
 
     public async Task UpdateAsync(int id, UpdateProductDto dto)
     {
-        var product = await _repository.GetByIdAsync(id);
+        var product = await _unitOfWork.Products.GetByIdAsync(id);
         if (product == null)
         {
             _logger.LogWarning("Update failed: Product {Id} not found", id);
@@ -64,21 +65,23 @@ public class ProductService : IProductService
         product.UpdateDetails(dto.Name, dto.Description, dto.Price);
         product.UpdateStock(dto.StockQuantity);
 
-        await _repository.UpdateAsync(product);
+        await _unitOfWork.Products.UpdateAsync(product);
+        await _unitOfWork.CompleteAsync();
         _logger.LogInformation("Product updated: {ProductId}", id);
     }
 
     public async Task DeleteAsync(int id)
     {
         // check exists trước khi delete - tránh exception từ DB
-        var exists = await _repository.ExistsAsync(id);
+        var exists = await _unitOfWork.Products.ExistsAsync(id);
         if (!exists)
         {
             _logger.LogWarning("Delete failed: Product {Id} not found", id);
             throw new NotFoundException($"Product with ID {id} not found");
         }
 
-        await _repository.DeleteAsync(id);
+        await _unitOfWork.Products.DeleteAsync(id);
+        await _unitOfWork.CompleteAsync();
         _logger.LogInformation("Product deleted: {ProductId}", id);
     }
 }

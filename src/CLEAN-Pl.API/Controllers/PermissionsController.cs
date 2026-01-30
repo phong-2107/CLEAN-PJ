@@ -33,7 +33,7 @@ public class PermissionsController : ControllerBase
         return Ok(permissions);
     }
 
-    /// Get permission by ID
+    // Get permission by ID
     [HttpGet("{id}")]
     [Permission("Permission.Read")]
     [ProducesResponseType(typeof(PermissionDto), StatusCodes.Status200OK)]

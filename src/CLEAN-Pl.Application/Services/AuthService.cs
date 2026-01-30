@@ -12,8 +12,7 @@ namespace CLEAN_Pl.Application.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IRoleRepository _roleRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtTokenService _tokenService;
     private readonly IMapper _mapper;
     private readonly JwtSettings _jwtSettings;
@@ -23,15 +22,13 @@ public class AuthService : IAuthService
     private const string DefaultRoleName = "User";
 
     public AuthService(
-        IUserRepository userRepository,
-        IRoleRepository roleRepository,
+        IUnitOfWork unitOfWork,
         IJwtTokenService tokenService,
         IMapper mapper,
         IOptions<JwtSettings> jwtSettings,
         ILogger<AuthService> logger)
     {
-        _userRepository = userRepository;
-        _roleRepository = roleRepository;
+        _unitOfWork = unitOfWork;
         _tokenService = tokenService;
         _mapper = mapper;
         _jwtSettings = jwtSettings.Value;
@@ -41,22 +38,21 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
         // check username first
-        if (await _userRepository.UsernameExistsAsync(dto.Username))
+        if (await _unitOfWork.Users.UsernameExistsAsync(dto.Username))
             throw new DuplicateException("User", nameof(dto.Username), dto.Username);
 
-        if (await _userRepository.EmailExistsAsync(dto.Email))
+        if (await _unitOfWork.Users.EmailExistsAsync(dto.Email))
             throw new DuplicateException("User", nameof(dto.Email), dto.Email);
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
         var user = User.Create(dto.Username, dto.Email, passwordHash, dto.FirstName, dto.LastName);
-        await _userRepository.AddAsync(user);
+        await _unitOfWork.Users.AddAsync(user);
 
         // NOTE: phải ensure role "User" exists trong DB seed, không thì register sẽ fail
-        // đã bị bug này 1 lần khi deploy lên staging
         var defaultRole = await GetOrCreateDefaultUserRole();
-        await _userRepository.AddUserRoleAsync(UserRole.Create(user.Id, defaultRole.Id));
-
+        await _unitOfWork.Users.AddUserRoleAsync(UserRole.Create(user.Id, defaultRole.Id));
+        
+        await _unitOfWork.CompleteAsync();
         _logger.LogInformation("New user registered: {Username}", dto.Username);
 
         return await GenerateAuthResponse(user);
@@ -64,7 +60,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
-        var user = await _userRepository.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
+        var user = await _unitOfWork.Users.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
         if (user == null)
         {
             // log failed attempts 
@@ -87,7 +83,8 @@ public class AuthService : IAuthService
         }
 
         user.UpdateLastLogin();
-        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.CompleteAsync();
 
         _logger.LogInformation("User logged in: {UserId}", user.Id);
         return await GenerateAuthResponse(user);
@@ -103,7 +100,7 @@ public class AuthService : IAuthService
         if (userId == null)
             throw new UnauthorizedException("Invalid token");
 
-        var user = await _userRepository.GetByIdAsync(userId.Value);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId.Value);
         if (user == null || user.RefreshToken != dto.RefreshToken || !user.IsRefreshTokenValid())
             throw new UnauthorizedException("Invalid refresh token");
 
@@ -112,17 +109,18 @@ public class AuthService : IAuthService
 
     public async Task RevokeTokenAsync(int userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
             throw new NotFoundException($"User with ID {userId} not found");
 
         user.RevokeRefreshToken();
-        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.CompleteAsync();
     }
 
     public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
             throw new NotFoundException($"User with ID {userId} not found");
 
@@ -134,14 +132,15 @@ public class AuthService : IAuthService
         var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         user.ChangePassword(newPasswordHash);
 
-        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.CompleteAsync();
     }
 
     private async Task<AuthResponseDto> GenerateAuthResponse(User user)
     {
         // Get user roles and permissions
-        var roles = await _userRepository.GetUserRolesAsync(user.Id);
-        var permissions = await _userRepository.GetUserPermissionsAsync(user.Id);
+        var roles = await _unitOfWork.Users.GetUserRolesAsync(user.Id);
+        var permissions = await _unitOfWork.Users.GetUserPermissionsAsync(user.Id);
 
         var roleNames = roles.Select(r => r.Name).ToList();
         var permissionStrings = permissions.Select(p => p.GetPermissionString()).ToList();
@@ -153,7 +152,8 @@ public class AuthService : IAuthService
         // Save refresh token
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
         user.SetRefreshToken(refreshToken, refreshTokenExpiry);
-        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.CompleteAsync();
 
         // Map to response
         var response = _mapper.Map<AuthResponseDto>(user);
@@ -169,7 +169,7 @@ public class AuthService : IAuthService
     private async Task<Role> GetOrCreateDefaultUserRole()
     {
         // tìm role "User" - nếu không có thì throw error vì DB seed chưa chạy
-        var role = await _roleRepository.GetByNameAsync(DefaultRoleName);
+        var role = await _unitOfWork.Roles.GetByNameAsync(DefaultRoleName);
 
         if (role == null)
         {

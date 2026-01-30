@@ -48,14 +48,12 @@ public class RoleRepository : IRoleRepository
     public async Task<Role> AddAsync(Role role)
     {
         await _context.Roles.AddAsync(role);
-        await _context.SaveChangesAsync();
         return role;
     }
 
     public async Task UpdateAsync(Role role)
     {
         _context.Roles.Update(role);
-        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -64,7 +62,6 @@ public class RoleRepository : IRoleRepository
         if (role != null)
         {
             _context.Roles.Remove(role);
-            await _context.SaveChangesAsync();
         }
     }
 
@@ -90,7 +87,6 @@ public class RoleRepository : IRoleRepository
     public async Task AddRolePermissionAsync(RolePermission rolePermission)
     {
         await _context.RolePermissions.AddAsync(rolePermission);
-        await _context.SaveChangesAsync();
     }
 
     public async Task RemoveRolePermissionAsync(int roleId, int permissionId)
@@ -101,7 +97,6 @@ public class RoleRepository : IRoleRepository
         if (rolePermission != null)
         {
             _context.RolePermissions.Remove(rolePermission);
-            await _context.SaveChangesAsync();
         }
     }
 }

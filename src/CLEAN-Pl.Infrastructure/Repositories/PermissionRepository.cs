@@ -43,14 +43,12 @@ public class PermissionRepository : IPermissionRepository
     public async Task<Domain.Entities.Permission> AddAsync(Domain.Entities.Permission permission)
     {
         await _context.Permissions.AddAsync(permission);
-        await _context.SaveChangesAsync();
         return permission;
     }
 
     public async Task UpdateAsync(Domain.Entities.Permission permission)
     {
         _context.Permissions.Update(permission);
-        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -59,7 +57,6 @@ public class PermissionRepository : IPermissionRepository
         if (permission != null)
         {
             _context.Permissions.Remove(permission);
-            await _context.SaveChangesAsync();
         }
     }
 

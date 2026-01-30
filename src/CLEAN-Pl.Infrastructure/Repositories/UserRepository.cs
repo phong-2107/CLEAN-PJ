@@ -67,14 +67,12 @@ public class UserRepository : IUserRepository
     public async Task<User> AddAsync(User user)
     {
         await _context.Users.AddAsync(user);
-        await _context.SaveChangesAsync();
         return user;
     }
 
     public async Task UpdateAsync(User user)
     {
         _context.Users.Update(user);
-        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
@@ -83,7 +81,6 @@ public class UserRepository : IUserRepository
         if (user != null)
         {
             _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
         }
     }
 
@@ -124,7 +121,6 @@ public class UserRepository : IUserRepository
     public async Task AddUserRoleAsync(UserRole userRole)
     {
         await _context.UserRoles.AddAsync(userRole);
-        await _context.SaveChangesAsync();
     }
 
     public async Task RemoveUserRoleAsync(int userId, int roleId)
@@ -135,7 +131,6 @@ public class UserRepository : IUserRepository
         if (userRole != null)
         {
             _context.UserRoles.Remove(userRole);
-            await _context.SaveChangesAsync();
         }
     }
 }

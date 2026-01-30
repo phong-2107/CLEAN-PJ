@@ -19,9 +19,7 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Register a new user
-    /// </summary>
+    // Register a new user
     [HttpPost("register")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -31,9 +29,7 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Register), response);
     }
 
-    /// <summary>
-    /// Login with username/email and password
-    /// </summary>
+    // Login with username/email and password
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -43,9 +39,7 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
-    /// <summary>
-    /// Refresh access token using refresh token
-    /// </summary>
+    // Refresh access token using refresh token
     [HttpPost("refresh-token")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -55,9 +49,7 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
-    /// <summary>
-    /// Logout - xóa refresh token
-    /// </summary>
+    // Logout - xóa refresh token
     [Authorize]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -78,9 +70,7 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Đổi password - cần đăng nhập
-    /// </summary>
+    // Đổi password - cần đăng nhập
     [Authorize]
     [HttpPost("change-password")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -100,9 +90,7 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Get current user info
-    /// </summary>
+    // Get current user info
     [Authorize]
     [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK)]

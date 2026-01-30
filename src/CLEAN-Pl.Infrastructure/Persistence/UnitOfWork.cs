@@ -11,6 +11,9 @@ public class UnitOfWork : IUnitOfWork
     private IDbContextTransaction? _transaction;
 
     private IProductRepository? _products;
+    private IUserRepository? _users;
+    private IRoleRepository? _roles;
+    private IPermissionRepository? _permissions;
     
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -23,6 +26,33 @@ public class UnitOfWork : IUnitOfWork
         {
             _products ??= new ProductRepository(_context);
             return _products;
+        }
+    }
+    
+    public IUserRepository Users
+    {
+        get
+        {
+            _users ??= new UserRepository(_context);
+            return _users;
+        }
+    }
+    
+    public IRoleRepository Roles
+    {
+        get
+        {
+            _roles ??= new RoleRepository(_context);
+            return _roles;
+        }
+    }
+    
+    public IPermissionRepository Permissions
+    {
+        get
+        {
+            _permissions ??= new PermissionRepository(_context);
+            return _permissions;
         }
     }
     
