@@ -5,18 +5,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CLEAN_Pl.Infrastructure.Repositories;
 
-public class ProductRepository : IProductRepository
+/// <summary>
+/// Product repository with custom filtering and pagination.
+/// </summary>
+public class ProductRepository : BaseRepository<Product>, IProductRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public ProductRepository(ApplicationDbContext context)
+    public ProductRepository(ApplicationDbContext context) : base(context)
     {
-        _context = context;
     }
 
-    public async Task<IEnumerable<Product>> GetAllAsync()
+    /// <summary>
+    /// Returns only active products by default.
+    /// </summary>
+    public override async Task<IEnumerable<Product>> GetAllAsync()
     {
-        return await _context.Products
+        return await _dbSet
             .Where(p => p.IsActive)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
@@ -33,13 +36,13 @@ public class ProductRepository : IProductRepository
         string? sortBy = null,
         bool sortDescending = false)
     {
-        var query = _context.Products.AsQueryable();
+        var query = _dbSet.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var search = searchTerm.ToLower();
-            query = query.Where(p => 
-                p.Name.ToLower().Contains(search) || 
+            query = query.Where(p =>
+                p.Name.ToLower().Contains(search) ||
                 (p.Description != null && p.Description.ToLower().Contains(search)));
         }
 
@@ -63,10 +66,9 @@ public class ProductRepository : IProductRepository
             "price" => sortDescending ? query.OrderByDescending(p => p.Price) : query.OrderBy(p => p.Price),
             "stock" => sortDescending ? query.OrderByDescending(p => p.StockQuantity) : query.OrderBy(p => p.StockQuantity),
             "createdat" => sortDescending ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
-            _ => query.OrderByDescending(p => p.CreatedAt) // Default
+            _ => query.OrderByDescending(p => p.CreatedAt)
         };
 
-        // Pagination
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -74,35 +76,5 @@ public class ProductRepository : IProductRepository
 
         return (items, totalCount);
     }
-
-    public async Task<Product?> GetByIdAsync(int id)
-    {
-        return await _context.Products
-            .FirstOrDefaultAsync(p => p.Id == id);
-    }
-
-    public async Task<Product> AddAsync(Product product)
-    {
-        await _context.Products.AddAsync(product);
-        return product;
-    }
-
-    public async Task UpdateAsync(Product product)
-    {
-        _context.Products.Update(product);
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        var product = await GetByIdAsync(id);
-        if (product != null)
-        {
-            _context.Products.Remove(product);
-        }
-    }
-
-    public async Task<bool> ExistsAsync(int id)
-    {
-        return await _context.Products.AnyAsync(p => p.Id == id);
-    }
 }
+

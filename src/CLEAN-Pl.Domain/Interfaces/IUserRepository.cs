@@ -2,9 +2,13 @@
 
 namespace CLEAN_Pl.Domain.Interfaces;
 
-public interface IUserRepository
+/// <summary>
+/// User-specific repository operations.
+/// </summary>
+public interface IUserRepository : IBaseRepository<User>
 {
     Task<IEnumerable<User>> GetAllAsync(bool includeInactive = false);
+
     Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
         int pageNumber,
         int pageSize,
@@ -13,14 +17,10 @@ public interface IUserRepository
         int? roleId = null,
         string? sortBy = null,
         bool sortDescending = false);
-    Task<User?> GetByIdAsync(int id);
+
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail);
-    Task<User> AddAsync(User user);
-    Task UpdateAsync(User user);
-    Task DeleteAsync(int id);
-    Task<bool> ExistsAsync(int id);
     Task<bool> UsernameExistsAsync(string username);
     Task<bool> EmailExistsAsync(string email);
     Task<IEnumerable<Role>> GetUserRolesAsync(int userId);
@@ -28,3 +28,4 @@ public interface IUserRepository
     Task AddUserRoleAsync(UserRole userRole);
     Task RemoveUserRoleAsync(int userId, int roleId);
 }
+

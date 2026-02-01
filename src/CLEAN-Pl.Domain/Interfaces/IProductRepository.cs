@@ -2,12 +2,17 @@
 
 namespace CLEAN_Pl.Domain.Interfaces;
 
-public interface IProductRepository
+/// <summary>
+/// Product-specific repository operations.
+/// </summary>
+public interface IProductRepository : IBaseRepository<Product>
 {
-    Task<IEnumerable<Product>> GetAllAsync();
+    /// <summary>
+    /// Advanced pagination with product-specific filters.
+    /// </summary>
     Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber, 
-        int pageSize, 
+        int pageNumber,
+        int pageSize,
         string? searchTerm = null,
         decimal? minPrice = null,
         decimal? maxPrice = null,
@@ -15,9 +20,5 @@ public interface IProductRepository
         bool? inStock = null,
         string? sortBy = null,
         bool sortDescending = false);
-    Task<Product?> GetByIdAsync(int id);
-    Task<Product> AddAsync(Product product);
-    Task UpdateAsync(Product product);
-    Task DeleteAsync(int id);
-    Task<bool> ExistsAsync(int id);
 }
+
