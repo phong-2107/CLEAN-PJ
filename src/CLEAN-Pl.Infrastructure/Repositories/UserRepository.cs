@@ -5,18 +5,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CLEAN_Pl.Infrastructure.Repositories;
 
-public class UserRepository : IUserRepository
+/// <summary>
+/// User repository with role/permission handling.
+/// </summary>
+public class UserRepository : BaseRepository<User>, IUserRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public UserRepository(ApplicationDbContext context)
+    public UserRepository(ApplicationDbContext context) : base(context)
     {
-        _context = context;
+    }
+
+    public override async Task<User?> GetByIdAsync(int id)
+    {
+        return await _dbSet
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<IEnumerable<User>> GetAllAsync(bool includeInactive = false)
     {
-        var query = _context.Users
+        var query = _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .AsQueryable();
@@ -38,7 +46,7 @@ public class UserRepository : IUserRepository
         string? sortBy = null,
         bool sortDescending = false)
     {
-        var query = _context.Users
+        var query = _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .AsQueryable();
@@ -60,6 +68,7 @@ public class UserRepository : IUserRepository
             query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId.Value));
 
         var totalCount = await query.CountAsync();
+
         query = sortBy?.ToLower() switch
         {
             "username" => sortDescending ? query.OrderByDescending(u => u.Username) : query.OrderBy(u => u.Username),
@@ -68,7 +77,6 @@ public class UserRepository : IUserRepository
             _ => query.OrderByDescending(u => u.CreatedAt)
         };
 
-        // Pagination
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -77,17 +85,9 @@ public class UserRepository : IUserRepository
         return (items, totalCount);
     }
 
-    public async Task<User?> GetByIdAsync(int id)
-    {
-        return await _context.Users
-            .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Id == id);
-    }
-
     public async Task<User?> GetByUsernameAsync(string username)
     {
-        return await _context.Users
+        return await _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
@@ -95,7 +95,7 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByEmailAsync(string email)
     {
-        return await _context.Users
+        return await _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
@@ -104,7 +104,7 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail)
     {
         var normalized = usernameOrEmail.ToLower();
-        return await _context.Users
+        return await _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u =>
@@ -112,39 +112,14 @@ public class UserRepository : IUserRepository
                 u.Email.ToLower() == normalized);
     }
 
-    public async Task<User> AddAsync(User user)
-    {
-        await _context.Users.AddAsync(user);
-        return user;
-    }
-
-    public async Task UpdateAsync(User user)
-    {
-        _context.Users.Update(user);
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        var user = await GetByIdAsync(id);
-        if (user != null)
-        {
-            _context.Users.Remove(user);
-        }
-    }
-
-    public async Task<bool> ExistsAsync(int id)
-    {
-        return await _context.Users.AnyAsync(u => u.Id == id);
-    }
-
     public async Task<bool> UsernameExistsAsync(string username)
     {
-        return await _context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower());
+        return await AnyAsync(u => u.Username.ToLower() == username.ToLower());
     }
 
     public async Task<bool> EmailExistsAsync(string email)
     {
-        return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
+        return await AnyAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
     public async Task<IEnumerable<Role>> GetUserRolesAsync(int userId)
@@ -156,7 +131,7 @@ public class UserRepository : IUserRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Domain.Entities.Permission>> GetUserPermissionsAsync(int userId)
+    public async Task<IEnumerable<Permission>> GetUserPermissionsAsync(int userId)
     {
         return await _context.UserRoles
             .Where(ur => ur.UserId == userId)

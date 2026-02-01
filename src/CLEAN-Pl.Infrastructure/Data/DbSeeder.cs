@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace CLEAN_Pl.Infrastructure.Data;
 
 /// <summary>
-/// Seed dữ liệu ban đầu cho DB
-/// NOTE: chỉ seed nếu table rỗng
+/// Seeds initial data (permissions, roles, admin user).
+/// Skips if data already exists.
 /// </summary>
 public class DbSeeder
 {
@@ -39,7 +39,7 @@ public class DbSeeder
     private async Task<bool> SeedPermissionsAsync()
     {
         var existingCount = await _context.Permissions.CountAsync();
-        
+
         if (existingCount > 0)
         {
             _logger?.LogDebug("Permissions already exist ({Count} records). Skipping seed.", existingCount);
@@ -74,7 +74,7 @@ public class DbSeeder
 
         await _context.Permissions.AddRangeAsync(permissions);
         await _context.SaveChangesAsync();
-        
+
         _logger?.LogInformation("Seeded {Count} permissions.", permissions.Count);
         return true;
     }
@@ -82,7 +82,7 @@ public class DbSeeder
     private async Task<bool> SeedRolesAsync()
     {
         var existingCount = await _context.Roles.CountAsync();
-        
+
         if (existingCount > 0)
         {
             _logger?.LogDebug("Roles already exist ({Count} records). Skipping seed.", existingCount);
@@ -137,7 +137,7 @@ public class DbSeeder
         }
 
         await _context.SaveChangesAsync();
-        
+
         _logger?.LogInformation("Seeded 3 roles (Admin, User, Manager) with permissions successfully.");
         return true;
     }
@@ -145,7 +145,7 @@ public class DbSeeder
     private async Task<bool> SeedDefaultAdminAsync()
     {
         var existingCount = await _context.Users.CountAsync();
-        
+
         if (existingCount > 0)
         {
             _logger?.LogDebug("Users already exist ({Count} records). Skipping seed.", existingCount);
@@ -166,7 +166,7 @@ public class DbSeeder
         await _context.UserRoles.AddAsync(UserRole.Create(adminUser.Id, adminRole.Id, "System"));
 
         await _context.SaveChangesAsync();
-        
+
         _logger?.LogInformation("Seeded default admin user (username: admin) successfully.");
         return true;
     }
