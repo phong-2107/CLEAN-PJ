@@ -1,5 +1,6 @@
 using AutoMapper;
 using CLEAN_Pl.Application.DTOs.Auth;
+using CLEAN_Pl.Application.DTOs.Category;
 using CLEAN_Pl.Application.DTOs.Permission;
 using CLEAN_Pl.Application.DTOs.Product;
 using CLEAN_Pl.Application.DTOs.Role;
@@ -17,7 +18,7 @@ public class MappingProfile : Profile
         CreateMap<Product, ProductListDto>();
         CreateMap<CreateProductDto, Product>();
         CreateMap<UpdateProductDto, Product>();
-
+        CreateMap<Category, CategoryDto>();
         // User mappings
         CreateMap<User, UserDto>()
             .ForMember(dest => dest.Roles,
