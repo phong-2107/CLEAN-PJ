@@ -49,6 +49,7 @@ appsettings.Local.json
 appsettings.*.json
 !appsettings.json
 
+
 ## ?? Connection Strings (n?u t�ch ri�ng)
 connectionstrings.json
 secrets.json
@@ -62,6 +63,7 @@ secrets.json
 .env.development
 .env.production
 .env.*.local
+docs/
 
 ## ?? Certificates & Keys
 *.pfx
@@ -182,6 +184,7 @@ npm-debug.log
 yarn-error.log
 package-lock.json
 yarn.lock
+client/.vite/
 
 ###############################
 # Docker
@@ -226,3 +229,13 @@ PublishScripts/
 ## Th�m c�c file c? th? c?a d? �n ? ?�y
 # CustomSecrets/
 # *.local.config
+
+###############################
+# Agent & AI Files
+###############################
+.agent/
+CLAUDE.md
+CLAUDE.md.metadata.json
+CLAUDE.md.resolved
+CLAUDE.md.resolved.0
+implementation_plan.md.resolved
