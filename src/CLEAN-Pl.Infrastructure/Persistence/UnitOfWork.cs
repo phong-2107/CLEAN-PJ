@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
     private IUserRepository? _users;
     private IRoleRepository? _roles;
     private IPermissionRepository? _permissions;
+    private ICategoryRepository? _categories;
     
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -53,6 +54,15 @@ public class UnitOfWork : IUnitOfWork
         {
             _permissions ??= new PermissionRepository(_context);
             return _permissions;
+        }
+    }
+    
+    public ICategoryRepository Categories
+    {
+        get
+        {
+            _categories ??= new CategoryRepository(_context);
+            return _categories;
         }
     }
     
