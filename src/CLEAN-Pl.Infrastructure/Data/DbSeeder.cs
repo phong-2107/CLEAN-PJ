@@ -1,4 +1,5 @@
-﻿using CLEAN_Pl.Domain.Entities;
+﻿using CLEAN_Pl.Domain.Constants;
+using CLEAN_Pl.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -51,25 +52,25 @@ public class DbSeeder
         var permissions = new List<Domain.Entities.Permission>
         {
             // Product Permissions
-            Domain.Entities.Permission.Create("Product.Create", "Product", "Create", "Create new products"),
-            Domain.Entities.Permission.Create("Product.Read", "Product", "Read", "View products"),
-            Domain.Entities.Permission.Create("Product.Update", "Product", "Update", "Update products"),
-            Domain.Entities.Permission.Create("Product.Delete", "Product", "Delete", "Delete products"),
+            Domain.Entities.Permission.Create("Product.Create", "Product", SystemConstants.Actions.Create, "Create new products"),
+            Domain.Entities.Permission.Create("Product.Read", "Product", SystemConstants.Actions.Read, "View products"),
+            Domain.Entities.Permission.Create("Product.Update", "Product", SystemConstants.Actions.Update, "Update products"),
+            Domain.Entities.Permission.Create("Product.Delete", "Product", SystemConstants.Actions.Delete, "Delete products"),
 
             // User Permissions
-            Domain.Entities.Permission.Create("User.Create", "User", "Create", "Create new users"),
-            Domain.Entities.Permission.Create("User.Read", "User", "Read", "View users"),
-            Domain.Entities.Permission.Create("User.Update", "User", "Update", "Update users"),
-            Domain.Entities.Permission.Create("User.Delete", "User", "Delete", "Delete users"),
+            Domain.Entities.Permission.Create("User.Create", "User", SystemConstants.Actions.Create, "Create new users"),
+            Domain.Entities.Permission.Create("User.Read", "User", SystemConstants.Actions.Read, "View users"),
+            Domain.Entities.Permission.Create("User.Update", "User", SystemConstants.Actions.Update, "Update users"),
+            Domain.Entities.Permission.Create("User.Delete", "User", SystemConstants.Actions.Delete, "Delete users"),
 
             // Role Permissions
-            Domain.Entities.Permission.Create("Role.Create", "Role", "Create", "Create new roles"),
-            Domain.Entities.Permission.Create("Role.Read", "Role", "Read", "View roles"),
-            Domain.Entities.Permission.Create("Role.Update", "Role", "Update", "Update roles"),
-            Domain.Entities.Permission.Create("Role.Delete", "Role", "Delete", "Delete roles"),
+            Domain.Entities.Permission.Create("Role.Create", "Role", SystemConstants.Actions.Create, "Create new roles"),
+            Domain.Entities.Permission.Create("Role.Read", "Role", SystemConstants.Actions.Read, "View roles"),
+            Domain.Entities.Permission.Create("Role.Update", "Role", SystemConstants.Actions.Update, "Update roles"),
+            Domain.Entities.Permission.Create("Role.Delete", "Role", SystemConstants.Actions.Delete, "Delete roles"),
 
             // Permission Permissions
-            Domain.Entities.Permission.Create("Permission.Read", "Permission", "Read", "View permissions"),
+            Domain.Entities.Permission.Create("Permission.Read", "Permission", SystemConstants.Actions.Read, "View permissions"),
         };
 
         await _context.Permissions.AddRangeAsync(permissions);
@@ -92,7 +93,7 @@ public class DbSeeder
         _logger?.LogInformation("Seeding roles...");
 
         // Create Admin Role
-        var adminRole = Role.Create("Admin", "System Administrator", isSystemRole: true);
+        var adminRole = Role.Create(SystemConstants.Roles.Admin, "System Administrator", isSystemRole: true);
         await _context.Roles.AddAsync(adminRole);
         await _context.SaveChangesAsync();
 
@@ -101,27 +102,27 @@ public class DbSeeder
         foreach (var permission in allPermissions)
         {
             await _context.RolePermissions.AddAsync(
-                RolePermission.Create(adminRole.Id, permission.Id, "System"));
+                RolePermission.Create(adminRole.Id, permission.Id, SystemConstants.SystemSource));
         }
 
         // Create User Role
-        var userRole = Role.Create("User", "Regular User", isSystemRole: true);
+        var userRole = Role.Create(SystemConstants.Roles.User, "Regular User", isSystemRole: true);
         await _context.Roles.AddAsync(userRole);
         await _context.SaveChangesAsync();
 
         // Assign basic permissions to User
         var userPermissions = await _context.Permissions
-            .Where(p => p.Resource == "Product" && p.Action == "Read")
+            .Where(p => p.Resource == "Product" && p.Action == SystemConstants.Actions.Read)
             .ToListAsync();
 
         foreach (var permission in userPermissions)
         {
             await _context.RolePermissions.AddAsync(
-                RolePermission.Create(userRole.Id, permission.Id, "System"));
+                RolePermission.Create(userRole.Id, permission.Id, SystemConstants.SystemSource));
         }
 
         // Create Manager Role
-        var managerRole = Role.Create("Manager", "Product Manager", isSystemRole: false);
+        var managerRole = Role.Create(SystemConstants.Roles.Manager, "Product Manager", isSystemRole: false);
         await _context.Roles.AddAsync(managerRole);
         await _context.SaveChangesAsync();
 
@@ -133,7 +134,7 @@ public class DbSeeder
         foreach (var permission in managerPermissions)
         {
             await _context.RolePermissions.AddAsync(
-                RolePermission.Create(managerRole.Id, permission.Id, "System"));
+                RolePermission.Create(managerRole.Id, permission.Id, SystemConstants.SystemSource));
         }
 
         await _context.SaveChangesAsync();
@@ -155,15 +156,15 @@ public class DbSeeder
         _logger?.LogInformation("Seeding default admin...");
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
-        var adminUser = User.Create("admin", "admin@cleanpl.com", passwordHash, "System", "Administrator");
+        var adminUser = User.Create("admin", "admin@cleanpl.com", passwordHash, SystemConstants.SystemSource, "Administrator");
         adminUser.ConfirmEmail();
 
         await _context.Users.AddAsync(adminUser);
         await _context.SaveChangesAsync();
 
         // Assign Admin role
-        var adminRole = await _context.Roles.FirstAsync(r => r.Name == "Admin");
-        await _context.UserRoles.AddAsync(UserRole.Create(adminUser.Id, adminRole.Id, "System"));
+        var adminRole = await _context.Roles.FirstAsync(r => r.Name == SystemConstants.Roles.Admin);
+        await _context.UserRoles.AddAsync(UserRole.Create(adminUser.Id, adminRole.Id, SystemConstants.SystemSource));
 
         await _context.SaveChangesAsync();
 

@@ -5,14 +5,22 @@ using System.Security.Claims;
 
 namespace CLEAN_Pl.API.Attributes;
 
+/// <summary>
+/// Authorization filter that checks if the current user has the required permission.
+/// Permission string format: "Resource.Action" (e.g., "Product.Read", "User.Create")
+/// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public class PermissionAttribute : Attribute, IAsyncAuthorizationFilter
 {
-    private readonly string _permission;
+    /// <summary>
+    /// Gets the permission string (e.g., "Product.Read").
+    /// Made public for reflection-based auto-discovery by PermissionDiscoveryService.
+    /// </summary>
+    public string Permission { get; }
 
     public PermissionAttribute(string permission)
     {
-        _permission = permission;
+        Permission = permission;
     }
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -24,6 +32,7 @@ public class PermissionAttribute : Attribute, IAsyncAuthorizationFilter
             context.Result = new UnauthorizedResult();
             return;
         }
+
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
         {
@@ -41,7 +50,7 @@ public class PermissionAttribute : Attribute, IAsyncAuthorizationFilter
         }
 
         var userPermissions = await cacheService.GetUserPermissionsAsync(userId);
-        var hasPermission = userPermissions.Contains(_permission);
+        var hasPermission = userPermissions.Contains(Permission);
 
         if (!hasPermission)
         {
