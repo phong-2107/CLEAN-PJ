@@ -1,11 +1,9 @@
+using CLEAN_Pl.Application.Interfaces;
+using CLEAN_Pl.Domain.Common;
 using CLEAN_Pl.Infrastructure.Data;
 
 namespace CLEAN_Pl.API.Services;
 
-/// <summary>
-/// Background service for database initialization and seeding.
-/// Runs once when the application starts without blocking startup.
-/// </summary>
 public class DatabaseInitializerService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -21,22 +19,42 @@ public class DatabaseInitializerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Database initialization started");
+        _logger.LogInformation("🚀 Database initialization started");
 
         try
         {
             using var scope = _scopeFactory.CreateScope();
+
+            // Seed initial data (Roles, Admin user, etc.)
             var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
-            
             await seeder.SeedAsync();
-            
-            _logger.LogInformation("Database seeding completed successfully");
+
+            // Auto-discover and sync permissions from code
+            var discoveryService = scope.ServiceProvider
+                .GetRequiredService<IPermissionDiscoveryService>();
+
+            var apiAssembly = typeof(Program).Assembly;
+            var domainAssembly = typeof(AuditableEntity).Assembly;
+
+            var result = await discoveryService.DiscoverAndSyncAsync(
+                apiAssembly,
+                domainAssembly,
+                stoppingToken);
+
+            _logger.LogInformation(
+                "📊 Permission discovery: Total={Total} (Entities={Entities}, Attributes={Attrs}), Added={New}",
+                result.TotalDiscovered,
+                result.FromEntities,
+                result.FromAttributes,
+                result.NewlyAdded);
+
+            _logger.LogInformation("✅ Database initialization completed successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Database seeding failed. The application will continue running. " +
-                                 "Please check database connectivity and run seeding manually if needed.");
-            // Không throw exception - cho phép app tiếp tục chạy
+            // Log error but don't crash app (it might be a transient DB issue)
+            _logger.LogError(ex, "Database initialization failed.");
+
         }
     }
 }
