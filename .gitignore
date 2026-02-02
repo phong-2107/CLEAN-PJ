@@ -2,6 +2,8 @@
 # .NET 10 Clean Architecture
 ###############################
 
+.github/
+
 ## Build Results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -47,7 +49,8 @@ appsettings.Local.json
 appsettings.*.json
 !appsettings.json
 
-## ?? Connection Strings (n?u tách riêng)
+
+## ?? Connection Strings (n?u tï¿½ch riï¿½ng)
 connectionstrings.json
 secrets.json
 
@@ -60,6 +63,7 @@ secrets.json
 .env.development
 .env.production
 .env.*.local
+docs/
 
 ## ?? Certificates & Keys
 *.pfx
@@ -99,7 +103,7 @@ artifacts/
 ###############################
 # Entity Framework Migrations
 ###############################
-## Gi? l?i migrations ?? team có th? sync database
+## Gi? l?i migrations ?? team cï¿½ th? sync database
 
 ###############################
 # Test Results
@@ -173,13 +177,14 @@ yarn-debug.log*
 yarn-error.log*
 
 ###############################
-# Node.js (n?u có Frontend)
+# Node.js (n?u cï¿½ Frontend)
 ###############################
 node_modules/
 npm-debug.log
 yarn-error.log
 package-lock.json
 yarn.lock
+client/.vite/
 
 ###############################
 # Docker
@@ -221,6 +226,16 @@ PublishScripts/
 ###############################
 # Custom Project Files
 ###############################
-## Thêm các file c? th? c?a d? án ? ?ây
+## Thï¿½m cï¿½c file c? th? c?a d? ï¿½n ? ?ï¿½y
 # CustomSecrets/
 # *.local.config
+
+###############################
+# Agent & AI Files
+###############################
+.agent/
+CLAUDE.md
+CLAUDE.md.metadata.json
+CLAUDE.md.resolved
+CLAUDE.md.resolved.0
+implementation_plan.md.resolved

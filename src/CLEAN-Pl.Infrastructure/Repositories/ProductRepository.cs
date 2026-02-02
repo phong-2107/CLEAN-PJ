@@ -5,54 +5,76 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CLEAN_Pl.Infrastructure.Repositories;
 
-public class ProductRepository : IProductRepository
+/// <summary>
+/// Product repository with custom filtering and pagination.
+/// </summary>
+public class ProductRepository : BaseRepository<Product>, IProductRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public ProductRepository(ApplicationDbContext context)
+    public ProductRepository(ApplicationDbContext context) : base(context)
     {
-        _context = context;
     }
 
-    public async Task<IEnumerable<Product>> GetAllAsync()
+    /// <summary>
+    /// Returns only active products by default.
+    /// </summary>
+    public override async Task<IEnumerable<Product>> GetAllAsync()
     {
-        return await _context.Products
+        return await _dbSet
             .Where(p => p.IsActive)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
     }
 
-    public async Task<Product?> GetByIdAsync(int id)
+    public async Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? searchTerm = null,
+        decimal? minPrice = null,
+        decimal? maxPrice = null,
+        bool? isActive = null,
+        bool? inStock = null,
+        string? sortBy = null,
+        bool sortDescending = false)
     {
-        return await _context.Products
-            .FirstOrDefaultAsync(p => p.Id == id);
-    }
+        var query = _dbSet.AsQueryable();
 
-    public async Task<Product> AddAsync(Product product)
-    {
-        await _context.Products.AddAsync(product);
-        await _context.SaveChangesAsync();
-        return product;
-    }
-
-    public async Task UpdateAsync(Product product)
-    {
-        _context.Products.Update(product);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        var product = await GetByIdAsync(id);
-        if (product != null)
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            var search = searchTerm.ToLower();
+            query = query.Where(p =>
+                p.Name.ToLower().Contains(search) ||
+                (p.Description != null && p.Description.ToLower().Contains(search)));
         }
-    }
 
-    public async Task<bool> ExistsAsync(int id)
-    {
-        return await _context.Products.AnyAsync(p => p.Id == id);
+        if (minPrice.HasValue)
+            query = query.Where(p => p.Price >= minPrice.Value);
+
+        if (maxPrice.HasValue)
+            query = query.Where(p => p.Price <= maxPrice.Value);
+
+        if (isActive.HasValue)
+            query = query.Where(p => p.IsActive == isActive.Value);
+
+        if (inStock.HasValue && inStock.Value)
+            query = query.Where(p => p.StockQuantity > 0);
+
+        var totalCount = await query.CountAsync();
+
+        query = sortBy?.ToLower() switch
+        {
+            "name" => sortDescending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
+            "price" => sortDescending ? query.OrderByDescending(p => p.Price) : query.OrderBy(p => p.Price),
+            "stock" => sortDescending ? query.OrderByDescending(p => p.StockQuantity) : query.OrderBy(p => p.StockQuantity),
+            "createdat" => sortDescending ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
+            _ => query.OrderByDescending(p => p.CreatedAt)
+        };
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
     }
 }
+

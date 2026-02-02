@@ -1,7 +1,9 @@
+using CLEAN_Pl.Application.Interfaces;
 using CLEAN_Pl.Domain.Interfaces;
 using CLEAN_Pl.Infrastructure.Data;
 using CLEAN_Pl.Infrastructure.Persistence;
 using CLEAN_Pl.Infrastructure.Repositories;
+using CLEAN_Pl.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +38,15 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+
+        // Database Seeder
+        services.AddScoped<DbSeeder>();
+
+        // Permission Auto-Discovery Service
+        services.AddScoped<IPermissionDiscoveryService, PermissionDiscoveryService>();
 
         return services;
     }

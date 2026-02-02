@@ -5,6 +5,8 @@ using CLEAN_Pl.Domain.Exceptions;
 
 namespace CLEAN_Pl.API.Middleware;
 
+// Global exception handler - QUAN TRỌNG: đặt đầu tiên trong pipeline!
+// Catch tất cả exception để trả về JSON thay vì HTML error page
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -37,32 +39,47 @@ public class ExceptionHandlingMiddleware
         var response = context.Response;
         response.ContentType = "application/json";
 
-        object errorResponse = exception switch
-        {
-            NotFoundException notFoundEx => new
-            {
-                StatusCode = (int)HttpStatusCode.NotFound,
-                Message = notFoundEx.Message
-            },
-            DomainException domainEx => new
-            {
-                StatusCode = (int)HttpStatusCode.BadRequest,
-                Message = domainEx.Message
-            },
-            ValidationException validationEx => new
-            {
-                StatusCode = (int)HttpStatusCode.BadRequest,
-                Message = "Validation failed",
-                Errors = validationEx.Errors
-            },
-            _ => new
-            {
-                StatusCode = (int)HttpStatusCode.InternalServerError,
-                Message = "An internal server error occurred"
-            }
-        };
+        int statusCode;
+        object errorResponse;
 
-        response.StatusCode = (errorResponse as dynamic).StatusCode;
+        switch (exception)
+        {
+            case NotFoundException notFoundEx:
+                statusCode = (int)HttpStatusCode.NotFound;
+                errorResponse = new { StatusCode = statusCode, Message = notFoundEx.Message };
+                break;
+                
+            case UnauthorizedException unauthorizedEx:
+                // KHÔNG log chi tiết exception vì có thể leak thông tin user
+                statusCode = (int)HttpStatusCode.Unauthorized;
+                errorResponse = new { StatusCode = statusCode, Message = unauthorizedEx.Message };
+                break;
+            case DomainException domainEx:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = domainEx.Message
+                };
+                break;
+            case ValidationException validationEx:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = "Validation failed",
+                    Errors = validationEx.Errors
+                };
+                break;
+            default:
+                // QUAN TRỌNG: không trả về exception.Message cho production!
+                // có thể leak stack trace hoặc info nhạy cảm
+                statusCode = (int)HttpStatusCode.InternalServerError;
+                errorResponse = new { StatusCode = statusCode, Message = "Có lỗi xảy ra. Vui lòng thử lại sau." };
+                break;
+        }
+
+        response.StatusCode = statusCode;
         await response.WriteAsync(JsonSerializer.Serialize(errorResponse));
     }
 }
