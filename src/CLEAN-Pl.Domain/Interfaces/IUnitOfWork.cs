@@ -7,6 +7,7 @@ public interface IUnitOfWork : IDisposable
     IRoleRepository Roles { get; }
     IPermissionRepository Permissions { get; }
     ICategoryRepository Categories { get; }
+    IAuditLogRepository AuditLogs { get; }
 
     Task<int> CompleteAsync();
     Task BeginTransactionAsync();

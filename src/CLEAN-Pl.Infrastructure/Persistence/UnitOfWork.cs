@@ -15,6 +15,7 @@ public class UnitOfWork : IUnitOfWork
     private IRoleRepository? _roles;
     private IPermissionRepository? _permissions;
     private ICategoryRepository? _categories;
+    private IAuditLogRepository? _auditLogs;
     
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -63,6 +64,15 @@ public class UnitOfWork : IUnitOfWork
         {
             _categories ??= new CategoryRepository(_context);
             return _categories;
+        }
+    }
+    
+    public IAuditLogRepository AuditLogs
+    {
+        get
+        {
+            _auditLogs ??= new AuditLogRepository(_context);
+            return _auditLogs;
         }
     }
     
