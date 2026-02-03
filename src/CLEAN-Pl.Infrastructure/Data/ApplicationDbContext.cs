@@ -18,7 +18,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<Category> Categories => Set<Category>();
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
