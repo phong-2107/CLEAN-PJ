@@ -2,7 +2,7 @@ using CLEAN_Pl.Domain.Enums;
 
 namespace CLEAN_Pl.Domain.Entities;
 
-// Represents an audit log entry that tracks changes to entities.
+// Immutable audit record. No FK constraints to ensure history persists after data deletion.
 public sealed class AuditLog
 {
     public long Id { get; private set; }

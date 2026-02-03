@@ -4,7 +4,7 @@ using CLEAN_Pl.Domain.Enums;
 namespace CLEAN_Pl.Domain.Interfaces;
 
 /// <summary>
-/// Repository interface for audit log operations.
+/// Specialized repository for Audit Log queries (Read-only, Filter-heavy).
 /// </summary>
 public interface IAuditLogRepository
 {
