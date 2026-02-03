@@ -45,7 +45,7 @@ public class PermissionDiscoveryService : IPermissionDiscoveryService
         var attributePermissions = DiscoverFromAttributes(apiAssembly);
         _logger.LogDebug("Discovered {Count} permissions from attributes", attributePermissions.Count);
 
-        // Merge: Attributes override entities if duplicate
+        // Merge: Attributes override entities if duplicate (they usually have better descriptions)
         var allPermissions = MergePermissions(entityPermissions, attributePermissions);
 
         // Diff with DB
