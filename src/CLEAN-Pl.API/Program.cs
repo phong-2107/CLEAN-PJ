@@ -2,11 +2,18 @@
 using CLEAN_Pl.API.Middleware;
 using CLEAN_Pl.API.Services;
 using CLEAN_Pl.Application;
+using CLEAN_Pl.Application.Interfaces;
 using CLEAN_Pl.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Services setup ---
+
+// HttpContextAccessor (required for CurrentUserService)
+builder.Services.AddHttpContextAccessor();
+
+// Current User Service (for audit logging)
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Controllers
 builder.Services.AddControllers();
