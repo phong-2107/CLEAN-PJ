@@ -22,7 +22,7 @@ public class PermissionsController : ControllerBase
         _logger = logger;
     }
 
-    // lấy all permissions - read-only, không có CRUD vì permissions được seed từ DB
+    // lấy all permissions
     [HttpGet]
     [Permission("Permission.Read")]
     [ProducesResponseType(typeof(IEnumerable<PermissionDto>), StatusCodes.Status200OK)]
