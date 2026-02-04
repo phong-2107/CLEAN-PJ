@@ -1,11 +1,8 @@
 import api from './api';
+import { Permission } from '../types/role';
 
-export interface Permission {
-    id: string;
-    name: string;
-    description?: string;
-    group?: string;
-}
+// Re-export Permission type for backward compatibility
+export type { Permission };
 
 const permissionService = {
     getAll: async () => {
@@ -13,14 +10,16 @@ const permissionService = {
         return response.data;
     },
 
-    create: async (permission: Omit<Permission, 'id'>) => {
-        const response = await api.post<Permission>('/permissions', permission);
+    getById: async (id: string) => {
+        const response = await api.get<Permission>(`/permissions/${id}`);
         return response.data;
     },
 
-    delete: async (id: string) => {
-        await api.delete(`/permissions/${id}`);
+    getByResource: async (resource: string) => {
+        const response = await api.get<Permission[]>(`/permissions/resource/${resource}`);
+        return response.data;
     }
 };
 
 export default permissionService;
+

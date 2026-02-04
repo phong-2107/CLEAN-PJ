@@ -1,11 +1,8 @@
 import api from './api';
+import { Role, Permission, CreateRoleRequest, UpdateRoleRequest } from '../types/role';
 
-export interface Role {
-    id: string;
-    name: string;
-    description?: string;
-    claims?: string[]; // Assuming permissions are claims or similar
-}
+// Re-export types for backward compatibility
+export type { Role, Permission };
 
 const roleService = {
     getAll: async () => {
@@ -18,19 +15,28 @@ const roleService = {
         return response.data;
     },
 
-    create: async (role: Omit<Role, 'id'>) => {
+    create: async (role: CreateRoleRequest) => {
         const response = await api.post<Role>('/roles', role);
         return response.data;
     },
 
-    update: async (id: string, role: Partial<Role>) => {
+    update: async (id: string, role: UpdateRoleRequest) => {
         const response = await api.put<Role>(`/roles/${id}`, role);
         return response.data;
     },
 
     delete: async (id: string) => {
         await api.delete(`/roles/${id}`);
+    },
+
+    assignPermission: async (roleId: string, permissionId: string) => {
+        await api.post(`/roles/${roleId}/permissions/${permissionId}`);
+    },
+
+    removePermission: async (roleId: string, permissionId: string) => {
+        await api.delete(`/roles/${roleId}/permissions/${permissionId}`);
     }
 };
 
 export default roleService;
+
