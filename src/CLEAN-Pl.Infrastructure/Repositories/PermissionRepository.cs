@@ -13,13 +13,13 @@ public class PermissionRepository : BaseRepository<Permission>, IPermissionRepos
     {
     }
 
-    public async Task<Permission?> GetByNameAsync(string name)
+    public async Task<Permission?> GetByNameAsync(string name, CancellationToken ct = default)
     {
-        return await FirstOrDefaultAsync(p => p.Name == name);
+        return await FirstOrDefaultAsync(p => p.Name == name, ct);
     }
 
-    public async Task<IEnumerable<Permission>> GetByResourceAsync(string resource)
+    public async Task<IEnumerable<Permission>> GetByResourceAsync(string resource, CancellationToken ct = default)
     {
-        return await FindAsync(p => p.Resource == resource);
+        return await FindAsync(p => p.Resource == resource, ct);
     }
 }

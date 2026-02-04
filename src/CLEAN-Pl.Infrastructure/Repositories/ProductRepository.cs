@@ -17,12 +17,12 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
     /// <summary>
     /// Returns only active products by default.
     /// </summary>
-    public override async Task<IEnumerable<Product>> GetAllAsync()
+    public override async Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct = default)
     {
         return await _dbSet
             .Where(p => p.IsActive)
             .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
     public async Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
@@ -34,7 +34,8 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
         bool? isActive = null,
         bool? inStock = null,
         string? sortBy = null,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        CancellationToken ct = default)
     {
         var query = _dbSet.AsQueryable();
 
@@ -58,7 +59,7 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
         if (inStock.HasValue && inStock.Value)
             query = query.Where(p => p.StockQuantity > 0);
 
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(ct);
 
         query = sortBy?.ToLower() switch
         {
@@ -72,9 +73,8 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         return (items, totalCount);
     }
 }
-
