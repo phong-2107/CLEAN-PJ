@@ -19,7 +19,6 @@ public class AuthService : IAuthService
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<AuthService> _logger;
 
-    // TODO: move to config
     private const string DefaultRoleName = "User";
 
     public AuthService(
@@ -38,47 +37,37 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
-        if (await _unitOfWork.Users.UsernameExistsAsync(dto.Username))
+        if (await _unitOfWork.Users.UsernameExistsAsync(dto.Username, ct))
             throw new DuplicateException("User", nameof(dto.Username), dto.Username);
 
-        if (await _unitOfWork.Users.EmailExistsAsync(dto.Email))
+        if (await _unitOfWork.Users.EmailExistsAsync(dto.Email, ct))
             throw new DuplicateException("User", nameof(dto.Email), dto.Email);
 
-        await _unitOfWork.BeginTransactionAsync();
-        
-        try
+        return await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             var user = User.Create(dto.Username, dto.Email, passwordHash, dto.FirstName, dto.LastName);
-            await _unitOfWork.Users.AddAsync(user);
-            await _unitOfWork.CompleteAsync();
+            await _unitOfWork.Users.AddAsync(user, ct);
+            await _unitOfWork.CompleteAsync(ct);
 
-            var defaultRole = await GetOrCreateDefaultUserRole();
-            await _unitOfWork.Users.AddUserRoleAsync(UserRole.Create(user.Id, defaultRole.Id));
-            
-            await _unitOfWork.CommitAsync();
+            var defaultRole = await GetOrCreateDefaultUserRole(ct);
+            await _unitOfWork.Users.AddUserRoleAsync(UserRole.Create(user.Id, defaultRole.Id), ct);
+            await _unitOfWork.CompleteAsync(ct);
+
             _logger.LogInformation("New user registered: {Username}", dto.Username);
 
-            // Reload để có navigation properties cho GenerateAuthResponse
-            var registeredUser = await _unitOfWork.Users.GetByIdAsync(user.Id);
-            return await GenerateAuthResponse(registeredUser!);
-        }
-        catch
-        {
-            await _unitOfWork.RollbackAsync();
-            throw;
-        }
+            var registeredUser = await _unitOfWork.Users.GetByIdAsync(user.Id, ct);
+            return await GenerateAuthResponse(registeredUser!, ct);
+        }, ct);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    public async Task<AuthResponseDto> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
-        var user = await _unitOfWork.Users.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
+        var user = await _unitOfWork.Users.GetByUsernameOrEmailAsync(dto.UsernameOrEmail, ct);
         if (user == null)
         {
-            // log failed attempts 
-            // KHÔNG log password, chỉ log identifier
             _logger.LogWarning("Failed login attempt for: {UsernameOrEmail}", dto.UsernameOrEmail);
             throw new UnauthorizedException("Invalid credentials");
         }
@@ -89,7 +78,6 @@ public class AuthService : IAuthService
             throw new UnauthorizedException("Invalid credentials");
         }
 
-        // edge case: admin deactivate user nhưng user vẫn có token cũ
         if (!user.IsActive)
         {
             _logger.LogWarning("Deactivated user attempted login: {UserId}", user.Id);
@@ -97,14 +85,14 @@ public class AuthService : IAuthService
         }
 
         user.UpdateLastLogin();
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Users.UpdateAsync(user, ct);
+        await _unitOfWork.CompleteAsync(ct);
 
         _logger.LogInformation("User logged in: {UserId}", user.Id);
-        return await GenerateAuthResponse(user);
+        return await GenerateAuthResponse(user, ct);
     }
 
-    public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto dto)
+    public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto dto, CancellationToken ct = default)
     {
         var principal = _tokenService.GetPrincipalFromExpiredToken(dto.RefreshToken);
         if (principal == null)
@@ -114,27 +102,27 @@ public class AuthService : IAuthService
         if (userId == null)
             throw new UnauthorizedException("Invalid token");
 
-        var user = await _unitOfWork.Users.GetByIdAsync(userId.Value);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId.Value, ct);
         if (user == null || user.RefreshToken != dto.RefreshToken || !user.IsRefreshTokenValid())
             throw new UnauthorizedException("Invalid refresh token");
 
-        return await GenerateAuthResponse(user);
+        return await GenerateAuthResponse(user, ct);
     }
 
-    public async Task RevokeTokenAsync(int userId)
+    public async Task RevokeTokenAsync(int userId, CancellationToken ct = default)
     {
-        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId, ct);
         if (user == null)
             throw new NotFoundException($"User with ID {userId} not found");
 
         user.RevokeRefreshToken();
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Users.UpdateAsync(user, ct);
+        await _unitOfWork.CompleteAsync(ct);
     }
 
-    public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
+    public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct = default)
     {
-        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId, ct);
         if (user == null)
             throw new NotFoundException($"User with ID {userId} not found");
 
@@ -144,20 +132,22 @@ public class AuthService : IAuthService
         var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         user.ChangePassword(newPasswordHash);
 
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Users.UpdateAsync(user, ct);
+        await _unitOfWork.CompleteAsync(ct);
     }
 
-    private async Task<AuthResponseDto> GenerateAuthResponse(User user)
+    private async Task<AuthResponseDto> GenerateAuthResponse(User user, CancellationToken ct = default)
     {
         var roleNames = (await _cacheService.GetUserRolesAsync(user.Id)).ToList();
         var permissionStrings = (await _cacheService.GetUserPermissionsAsync(user.Id)).ToList();
         var accessToken = _tokenService.GenerateAccessToken(user, roleNames, permissionStrings);
         var refreshToken = _tokenService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
+
         user.SetRefreshToken(refreshToken, refreshTokenExpiry);
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Users.UpdateAsync(user, ct);
+        await _unitOfWork.CompleteAsync(ct);
+
         var response = _mapper.Map<AuthResponseDto>(user);
         response.AccessToken = accessToken;
         response.RefreshToken = refreshToken;
@@ -167,9 +157,9 @@ public class AuthService : IAuthService
         return response;
     }
 
-    private async Task<Role> GetOrCreateDefaultUserRole()
+    private async Task<Role> GetOrCreateDefaultUserRole(CancellationToken ct = default)
     {
-        var role = await _unitOfWork.Roles.GetByNameAsync(DefaultRoleName);
+        var role = await _unitOfWork.Roles.GetByNameAsync(DefaultRoleName, ct);
 
         if (role == null)
         {
