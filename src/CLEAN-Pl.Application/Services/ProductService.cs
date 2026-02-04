@@ -25,13 +25,13 @@ public class ProductService : IProductService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<ProductDto>> GetAllAsync()
+    public async Task<IEnumerable<ProductDto>> GetAllAsync(CancellationToken ct = default)
     {
-        var products = await _unitOfWork.Products.GetAllAsync();
+        var products = await _unitOfWork.Products.GetAllAsync(ct);
         return _mapper.Map<IEnumerable<ProductDto>>(products);
     }
 
-    public async Task<PagedResult<ProductDto>> GetPagedAsync(ProductQueryParameters parameters)
+    public async Task<PagedResult<ProductDto>> GetPagedAsync(ProductQueryParameters parameters, CancellationToken ct = default)
     {
         var (items, totalCount) = await _unitOfWork.Products.GetPagedAsync(
             parameters.PageNumber,
@@ -42,40 +42,40 @@ public class ProductService : IProductService
             parameters.IsActive,
             parameters.InStock,
             parameters.SortBy,
-            parameters.SortDescending
+            parameters.SortDescending,
+            ct
         );
 
         var dtos = _mapper.Map<IEnumerable<ProductDto>>(items);
-        
+
         return new PagedResult<ProductDto>(dtos, totalCount, parameters.PageNumber, parameters.PageSize);
     }
 
-    public async Task<ProductDto?> GetByIdAsync(int id)
+    public async Task<ProductDto?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-
         if (id <= 0)
         {
             _logger.LogWarning("GetByIdAsync called with invalid id: {Id}", id);
             return null;
         }
 
-        var product = await _unitOfWork.Products.GetByIdAsync(id);
+        var product = await _unitOfWork.Products.GetByIdAsync(id, ct);
         return product == null ? null : _mapper.Map<ProductDto>(product);
     }
 
-    public async Task<ProductDto> CreateAsync(CreateProductDto dto)
+    public async Task<ProductDto> CreateAsync(CreateProductDto dto, CancellationToken ct = default)
     {
         var product = Product.Create(dto.Name, dto.Description, dto.Price, dto.StockQuantity);
-        var createdProduct = await _unitOfWork.Products.AddAsync(product);
-        await _unitOfWork.CompleteAsync();
+        var createdProduct = await _unitOfWork.Products.AddAsync(product, ct);
+        await _unitOfWork.CompleteAsync(ct);
 
         _logger.LogInformation("Product created: {ProductId} - {ProductName}", createdProduct.Id, createdProduct.Name);
         return _mapper.Map<ProductDto>(createdProduct);
     }
 
-    public async Task UpdateAsync(int id, UpdateProductDto dto)
+    public async Task UpdateAsync(int id, UpdateProductDto dto, CancellationToken ct = default)
     {
-        var product = await _unitOfWork.Products.GetByIdAsync(id);
+        var product = await _unitOfWork.Products.GetByIdAsync(id, ct);
         if (product == null)
         {
             _logger.LogWarning("Update failed: Product {Id} not found", id);
@@ -85,23 +85,22 @@ public class ProductService : IProductService
         product.UpdateDetails(dto.Name, dto.Description, dto.Price);
         product.UpdateStock(dto.StockQuantity);
 
-        await _unitOfWork.Products.UpdateAsync(product);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Products.UpdateAsync(product, ct);
+        await _unitOfWork.CompleteAsync(ct);
         _logger.LogInformation("Product updated: {ProductId}", id);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var exists = await _unitOfWork.Products.ExistsAsync(id);
+        var exists = await _unitOfWork.Products.ExistsAsync(id, ct);
         if (!exists)
         {
             _logger.LogWarning("Delete failed: Product {Id} not found", id);
             throw new NotFoundException($"Product with ID {id} not found");
         }
 
-        await _unitOfWork.Products.DeleteAsync(id);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Products.DeleteAsync(id, ct);
+        await _unitOfWork.CompleteAsync(ct);
         _logger.LogInformation("Product deleted: {ProductId}", id);
     }
 }
-
