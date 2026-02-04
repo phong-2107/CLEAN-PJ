@@ -22,12 +22,12 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
 
     #region Read Operations
 
-    public virtual async Task<TEntity?> GetByIdAsync(int id)
+    public virtual async Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _dbSet.FindAsync(id);
+        return await _dbSet.FindAsync(new object[] { id }, ct);
     }
 
-    public virtual async Task<TEntity?> GetByIdAsync(int id, params Expression<Func<TEntity, object>>[] includes)
+    public virtual async Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default, params Expression<Func<TEntity, object>>[] includes)
     {
         IQueryable<TEntity> query = _dbSet;
 
@@ -36,21 +36,22 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
             query = query.Include(include);
         }
 
-        return await query.FirstOrDefaultAsync(e => e.Id == id);
+        return await query.FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
-    public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
+    public virtual async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _dbSet.ToListAsync();
+        return await _dbSet.ToListAsync(ct);
     }
 
-    public virtual async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
+    public virtual async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
     {
-        return await _dbSet.Where(predicate).ToListAsync();
+        return await _dbSet.Where(predicate).ToListAsync(ct);
     }
 
     public virtual async Task<IEnumerable<TEntity>> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
+        CancellationToken ct = default,
         params Expression<Func<TEntity, object>>[] includes)
     {
         IQueryable<TEntity> query = _dbSet.Where(predicate);
@@ -60,55 +61,55 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
             query = query.Include(include);
         }
 
-        return await query.ToListAsync();
+        return await query.ToListAsync(ct);
     }
 
-    public virtual async Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate)
+    public virtual async Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
     {
-        return await _dbSet.FirstOrDefaultAsync(predicate);
+        return await _dbSet.FirstOrDefaultAsync(predicate, ct);
     }
 
-    public virtual async Task<bool> ExistsAsync(int id)
+    public virtual async Task<bool> ExistsAsync(int id, CancellationToken ct = default)
     {
-        return await _dbSet.AnyAsync(e => e.Id == id);
+        return await _dbSet.AnyAsync(e => e.Id == id, ct);
     }
 
-    public virtual async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
+    public virtual async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
     {
-        return await _dbSet.AnyAsync(predicate);
+        return await _dbSet.AnyAsync(predicate, ct);
     }
 
-    public virtual async Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null)
+    public virtual async Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken ct = default)
     {
         if (predicate == null)
-            return await _dbSet.CountAsync();
+            return await _dbSet.CountAsync(ct);
 
-        return await _dbSet.CountAsync(predicate);
+        return await _dbSet.CountAsync(predicate, ct);
     }
 
     #endregion
 
     #region Write Operations
 
-    public virtual async Task<TEntity> AddAsync(TEntity entity)
+    public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken ct = default)
     {
-        await _dbSet.AddAsync(entity);
+        await _dbSet.AddAsync(entity, ct);
         return entity;
     }
 
-    public virtual async Task AddRangeAsync(IEnumerable<TEntity> entities)
+    public virtual async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default)
     {
-        await _dbSet.AddRangeAsync(entities);
+        await _dbSet.AddRangeAsync(entities, ct);
     }
 
-    public virtual Task UpdateAsync(TEntity entity)
+    public virtual Task UpdateAsync(TEntity entity, CancellationToken ct = default)
     {
         entity.SetUpdatedAt();
         _dbSet.Update(entity);
         return Task.CompletedTask;
     }
 
-    public virtual Task UpdateRangeAsync(IEnumerable<TEntity> entities)
+    public virtual Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default)
     {
         foreach (var entity in entities)
         {
@@ -118,22 +119,22 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         return Task.CompletedTask;
     }
 
-    public virtual async Task DeleteAsync(int id)
+    public virtual async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await GetByIdAsync(id);
+        var entity = await GetByIdAsync(id, ct);
         if (entity != null)
         {
             _dbSet.Remove(entity);
         }
     }
 
-    public virtual Task DeleteAsync(TEntity entity)
+    public virtual Task DeleteAsync(TEntity entity, CancellationToken ct = default)
     {
         _dbSet.Remove(entity);
         return Task.CompletedTask;
     }
 
-    public virtual Task DeleteRangeAsync(IEnumerable<TEntity> entities)
+    public virtual Task DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default)
     {
         _dbSet.RemoveRange(entities);
         return Task.CompletedTask;
@@ -148,6 +149,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         int pageSize,
         Expression<Func<TEntity, bool>>? predicate = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+        CancellationToken ct = default,
         params Expression<Func<TEntity, object>>[] includes)
     {
         IQueryable<TEntity> query = _dbSet;
@@ -162,7 +164,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
             query = query.Where(predicate);
         }
 
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(ct);
 
         if (orderBy != null)
         {
@@ -176,7 +178,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         return (items, totalCount);
     }
@@ -200,4 +202,3 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
 
     #endregion
 }
-
