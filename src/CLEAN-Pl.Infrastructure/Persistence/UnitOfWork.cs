@@ -19,7 +19,7 @@ public class UnitOfWork : IUnitOfWork
     private IPermissionRepository? _permissions;
     private ICategoryRepository? _categories;
     private IAuditLogRepository? _auditLogs;
-    
+
     public UnitOfWork(ApplicationDbContext context)
     {
         _context = context;
@@ -72,12 +72,6 @@ public class UnitOfWork : IUnitOfWork
         }
     }
 
-    #endregion
-
-    #region Transaction Methods
-
-    public async Task<int> CompleteAsync(CancellationToken ct = default)
-    
     public IAuditLogRepository AuditLogs
     {
         get
@@ -86,8 +80,12 @@ public class UnitOfWork : IUnitOfWork
             return _auditLogs;
         }
     }
-    
-    public async Task<int> CompleteAsync()
+
+    #endregion
+
+    #region Transaction Methods
+
+    public async Task<int> CompleteAsync(CancellationToken ct = default)
     {
         return await _context.SaveChangesAsync(ct);
     }
