@@ -7,6 +7,6 @@ namespace CLEAN_Pl.Domain.Interfaces;
 /// </summary>
 public interface IPermissionRepository : IBaseRepository<Permission>
 {
-    Task<Permission?> GetByNameAsync(string name);
-    Task<IEnumerable<Permission>> GetByResourceAsync(string resource);
+    Task<Permission?> GetByNameAsync(string name, CancellationToken ct = default);
+    Task<IEnumerable<Permission>> GetByResourceAsync(string resource, CancellationToken ct = default);
 }

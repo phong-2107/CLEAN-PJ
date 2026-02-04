@@ -2,14 +2,8 @@
 
 namespace CLEAN_Pl.Domain.Interfaces;
 
-/// <summary>
-/// Product-specific repository operations.
-/// </summary>
 public interface IProductRepository : IBaseRepository<Product>
 {
-    /// <summary>
-    /// Advanced pagination with product-specific filters.
-    /// </summary>
     Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
         int pageNumber,
         int pageSize,
@@ -19,6 +13,6 @@ public interface IProductRepository : IBaseRepository<Product>
         bool? isActive = null,
         bool? inStock = null,
         string? sortBy = null,
-        bool sortDescending = false);
+        bool sortDescending = false,
+        CancellationToken ct = default);
 }
-
