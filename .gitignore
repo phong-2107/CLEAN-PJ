@@ -239,3 +239,7 @@ CLAUDE.md.metadata.json
 CLAUDE.md.resolved
 CLAUDE.md.resolved.0
 implementation_plan.md.resolved
+
+
+check_git.bat
+client/dist/
