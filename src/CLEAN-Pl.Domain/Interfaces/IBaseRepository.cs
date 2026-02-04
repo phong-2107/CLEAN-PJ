@@ -9,26 +9,27 @@ namespace CLEAN_Pl.Domain.Interfaces;
 public interface IBaseRepository<TEntity> where TEntity : BaseEntity
 {
     // Read
-    Task<TEntity?> GetByIdAsync(int id);
-    Task<TEntity?> GetByIdAsync(int id, params Expression<Func<TEntity, object>>[] includes);
-    Task<IEnumerable<TEntity>> GetAllAsync();
-    Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
+    Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default, params Expression<Func<TEntity, object>>[] includes);
+    Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken ct = default);
+    Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
     Task<IEnumerable<TEntity>> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
+        CancellationToken ct = default,
         params Expression<Func<TEntity, object>>[] includes);
-    Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate);
-    Task<bool> ExistsAsync(int id);
-    Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate);
-    Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null);
+    Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+    Task<bool> ExistsAsync(int id, CancellationToken ct = default);
+    Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+    Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken ct = default);
 
     // Write (changes tracked, call UnitOfWork.CompleteAsync() to persist)
-    Task<TEntity> AddAsync(TEntity entity);
-    Task AddRangeAsync(IEnumerable<TEntity> entities);
-    Task UpdateAsync(TEntity entity);
-    Task UpdateRangeAsync(IEnumerable<TEntity> entities);
-    Task DeleteAsync(int id);
-    Task DeleteAsync(TEntity entity);
-    Task DeleteRangeAsync(IEnumerable<TEntity> entities);
+    Task<TEntity> AddAsync(TEntity entity, CancellationToken ct = default);
+    Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default);
+    Task UpdateAsync(TEntity entity, CancellationToken ct = default);
+    Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
+    Task DeleteAsync(TEntity entity, CancellationToken ct = default);
+    Task DeleteRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default);
 
     // Pagination
     Task<(IEnumerable<TEntity> Items, int TotalCount)> GetPagedAsync(
@@ -36,5 +37,6 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
         int pageSize,
         Expression<Func<TEntity, bool>>? predicate = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+        CancellationToken ct = default,
         params Expression<Func<TEntity, object>>[] includes);
 }
