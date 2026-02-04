@@ -2,7 +2,7 @@ import React from 'react';
 import { Product } from '../../types/product';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { ShoppingCart, Eye, Star, Heart } from 'lucide-react';
+import { ShoppingCart, Star, Heart } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface ProductCardProps {

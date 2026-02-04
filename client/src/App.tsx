@@ -4,8 +4,10 @@ import { RegisterPage } from './pages/Register/RegisterPage';
 import { HomePage } from './pages/Home/HomePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { ProductsPage } from './pages/Dashboard/ProductsPage';
+import { ProductDetailPage } from './pages/Dashboard/ProductDetailPage';
 import { UsersPage } from './pages/Dashboard/UsersPage';
 import { RolesPage } from './pages/Dashboard/RolesPage';
+import { RoleDetailPage } from './pages/Dashboard/RoleDetailPage';
 import { PermissionsPage } from './pages/Dashboard/PermissionsPage';
 import { SettingsPage } from './pages/Dashboard/SettingsPage';
 import { PlaceholderPage } from './pages/Dashboard/PlaceholderPage';
@@ -52,10 +54,12 @@ function App() {
                 >
                     <Route index element={<DashboardPage />} />
                     <Route path="products" element={<ProductsPage />} />
+                    <Route path="products/:id" element={<ProductDetailPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="customers" element={<UsersPage />} />
                     <Route path="roles" element={<RolesPage />} />
+                    <Route path="roles/:id" element={<RoleDetailPage />} />
                     <Route path="permissions" element={<PermissionsPage />} />
 
                     {/* Placeholder Routes */}

@@ -1,9 +1,14 @@
 import api from './api';
-import { Product, CreateProductRequest, UpdateProductRequest } from '../types/product';
+import { Product, CreateProductRequest, UpdateProductRequest, PagedResult, ProductQueryParams } from '../types/product';
 
 const productService = {
     getAll: async () => {
         const response = await api.get<Product[]>('/products');
+        return response.data;
+    },
+
+    getPaged: async (params: ProductQueryParams = {}) => {
+        const response = await api.get<PagedResult<Product>>('/products/paged', { params });
         return response.data;
     },
 
@@ -28,3 +33,4 @@ const productService = {
 };
 
 export default productService;
+

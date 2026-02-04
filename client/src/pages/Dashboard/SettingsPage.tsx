@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Avatar } from '../../components/ui/Avatar';
@@ -16,16 +16,15 @@ import {
     CreditCard,
     BookUser,
     Upload,
-    Mail,
-    Lock
+    Mail
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export const SettingsPage = () => {
     const { user } = useAuthStore();
-    const [firstName, setFirstName] = useState(user?.fullName?.split(' ')[0] || 'Dianne');
-    const [lastName, setLastName] = useState(user?.fullName?.split(' ')[1] || 'Russell');
-    const [email, setEmail] = useState(user?.email || 'russel@hey.com');
+    const [firstName, setFirstName] = useState(user?.firstName || 'Dianne');
+    const [lastName, setLastName] = useState(user?.lastName || 'Russell');
+    const [email] = useState(user?.email || 'russel@hey.com');
 
     const sidebarItems = [
         {
@@ -99,7 +98,7 @@ export const SettingsPage = () => {
                     {/* Profile Picture */}
                     <div className="flex items-start gap-6">
                         <Avatar
-                            size="xl"
+                            size="lg"
                             className="h-24 w-24"
                             src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80"
                             fallback="DR"

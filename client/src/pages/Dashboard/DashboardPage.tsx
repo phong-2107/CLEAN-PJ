@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Tabs } from '../../components/ui/Tabs';
 import { DataTable, Column } from '../../components/ui/DataTable';
 import { Pagination } from '../../components/ui/Pagination';
-import { Badge } from '../../components/ui/Badge';
 import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
     Package,
@@ -19,8 +17,7 @@ import {
     Search,
     Download,
     Plus,
-    MoreVertical,
-    ArrowUpRight
+    MoreVertical
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -148,7 +145,7 @@ export const DashboardPage = () => {
             {/* Header */}
             <div className="flex flex-col gap-1">
                 <h1 className="text-2xl font-bold text-gray-900">
-                    Welcome back, {user?.fullName?.split(' ')[0] || 'User'} 👋
+                    Welcome back, {user?.firstName || 'User'} 👋
                 </h1>
                 <p className="text-gray-500">
                     Here's what's happening with your store today.
@@ -251,7 +248,7 @@ export const DashboardPage = () => {
                     <DataTable
                         columns={columns}
                         data={mockProducts}
-                        renderActions={(item) => (
+                        renderActions={() => (
                             <button className="p-1 text-gray-400 hover:text-gray-600">
                                 <MoreVertical className="h-4 w-4" />
                             </button>

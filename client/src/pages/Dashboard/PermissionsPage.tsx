@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { DataTable, Column } from '../../components/ui/DataTable';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Search, Plus, Filter, Lock, Edit, Trash2 } from 'lucide-react';
-import permissionService, { Permission } from '../../services/permissionService';
+import { Search, Plus, Filter, Lock, Trash2 } from 'lucide-react';
+import permissionService from '../../services/permissionService';
+import { Permission } from '../../types/role';
 
 export const PermissionsPage = () => {
     const [permissions, setPermissions] = useState<Permission[]>([]);
