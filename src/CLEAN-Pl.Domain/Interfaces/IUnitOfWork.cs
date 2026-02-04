@@ -10,6 +10,7 @@ public interface IUnitOfWork : IDisposable
     IRoleRepository Roles { get; }
     IPermissionRepository Permissions { get; }
     ICategoryRepository Categories { get; }
+    IAuditLogRepository AuditLogs { get; }
 
     /// <summary>
     /// Saves all pending changes to the database.

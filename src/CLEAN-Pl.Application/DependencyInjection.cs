@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
 
         return services;
     }

@@ -18,7 +18,8 @@ public class UnitOfWork : IUnitOfWork
     private IRoleRepository? _roles;
     private IPermissionRepository? _permissions;
     private ICategoryRepository? _categories;
-
+    private IAuditLogRepository? _auditLogs;
+    
     public UnitOfWork(ApplicationDbContext context)
     {
         _context = context;
@@ -76,6 +77,17 @@ public class UnitOfWork : IUnitOfWork
     #region Transaction Methods
 
     public async Task<int> CompleteAsync(CancellationToken ct = default)
+    
+    public IAuditLogRepository AuditLogs
+    {
+        get
+        {
+            _auditLogs ??= new AuditLogRepository(_context);
+            return _auditLogs;
+        }
+    }
+    
+    public async Task<int> CompleteAsync()
     {
         return await _context.SaveChangesAsync(ct);
     }
