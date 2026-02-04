@@ -14,15 +14,15 @@ public class RoleRepository : BaseRepository<Role>, IRoleRepository
     {
     }
 
-    public override async Task<Role?> GetByIdAsync(int id)
+    public override async Task<Role?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await _dbSet
             .Include(r => r.RolePermissions)
                 .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
     }
 
-    public async Task<IEnumerable<Role>> GetAllAsync(bool includeInactive = false)
+    public async Task<IEnumerable<Role>> GetAllAsync(bool includeInactive = false, CancellationToken ct = default)
     {
         var query = _dbSet
             .Include(r => r.RolePermissions)
@@ -34,40 +34,40 @@ public class RoleRepository : BaseRepository<Role>, IRoleRepository
 
         return await query
             .OrderBy(r => r.Name)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<Role?> GetByNameAsync(string name)
+    public async Task<Role?> GetByNameAsync(string name, CancellationToken ct = default)
     {
         return await _dbSet
             .Include(r => r.RolePermissions)
                 .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(r => r.Name == name);
+            .FirstOrDefaultAsync(r => r.Name == name, ct);
     }
 
-    public async Task<bool> NameExistsAsync(string name)
+    public async Task<bool> NameExistsAsync(string name, CancellationToken ct = default)
     {
-        return await AnyAsync(r => r.Name == name);
+        return await AnyAsync(r => r.Name == name, ct);
     }
 
-    public async Task<IEnumerable<Permission>> GetRolePermissionsAsync(int roleId)
+    public async Task<IEnumerable<Permission>> GetRolePermissionsAsync(int roleId, CancellationToken ct = default)
     {
         return await _context.RolePermissions
             .Where(rp => rp.RoleId == roleId)
             .Include(rp => rp.Permission)
             .Select(rp => rp.Permission)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task AddRolePermissionAsync(RolePermission rolePermission)
+    public async Task AddRolePermissionAsync(RolePermission rolePermission, CancellationToken ct = default)
     {
-        await _context.RolePermissions.AddAsync(rolePermission);
+        await _context.RolePermissions.AddAsync(rolePermission, ct);
     }
 
-    public async Task RemoveRolePermissionAsync(int roleId, int permissionId)
+    public async Task RemoveRolePermissionAsync(int roleId, int permissionId, CancellationToken ct = default)
     {
         var rolePermission = await _context.RolePermissions
-            .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId);
+            .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId, ct);
 
         if (rolePermission != null)
         {

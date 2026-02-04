@@ -24,49 +24,46 @@ public class RoleService : IRoleService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<RoleDto>> GetAllAsync()
+    public async Task<IEnumerable<RoleDto>> GetAllAsync(CancellationToken ct = default)
     {
-        // include inactive = false, chỉ lấy role active
-        var roles = await _unitOfWork.Roles.GetAllAsync();
+        var roles = await _unitOfWork.Roles.GetAllAsync(false, ct);
         return _mapper.Map<IEnumerable<RoleDto>>(roles);
     }
 
-    public async Task<RoleDto?> GetByIdAsync(int id)
+    public async Task<RoleDto?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        var role = await _unitOfWork.Roles.GetByIdAsync(id);
+        var role = await _unitOfWork.Roles.GetByIdAsync(id, ct);
         return role == null ? null : _mapper.Map<RoleDto>(role);
     }
 
-    public async Task<RoleDto> CreateAsync(CreateRoleDto dto)
+    public async Task<RoleDto> CreateAsync(CreateRoleDto dto, CancellationToken ct = default)
     {
-        if (await _unitOfWork.Roles.NameExistsAsync(dto.Name))
+        if (await _unitOfWork.Roles.NameExistsAsync(dto.Name, ct))
             throw new DuplicateException("Role", nameof(dto.Name), dto.Name);
 
-        await _unitOfWork.BeginTransactionAsync();
-        
-        try
+        return await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var role = Role.Create(dto.Name, dto.Description);
-            await _unitOfWork.Roles.AddAsync(role);
-            await _unitOfWork.CompleteAsync();
+            await _unitOfWork.Roles.AddAsync(role, ct);
+            await _unitOfWork.CompleteAsync(ct);
 
             var permissionStrings = new List<string>();
             if (dto.PermissionIds.Any())
             {
                 foreach (var permissionId in dto.PermissionIds)
                 {
-                    var permission = await _unitOfWork.Permissions.GetByIdAsync(permissionId);
+                    var permission = await _unitOfWork.Permissions.GetByIdAsync(permissionId, ct);
                     if (permission == null)
                         throw new NotFoundException($"Permission with ID {permissionId} not found");
 
                     permissionStrings.Add(permission.GetPermissionString());
                     await _unitOfWork.Roles.AddRolePermissionAsync(
-                        RolePermission.Create(role.Id, permissionId));
+                        RolePermission.Create(role.Id, permissionId), ct);
                 }
             }
 
-            await _unitOfWork.CommitAsync();
-            
+            await _unitOfWork.CompleteAsync(ct);
+
             return new RoleDto
             {
                 Id = role.Id,
@@ -76,62 +73,56 @@ public class RoleService : IRoleService
                 IsSystemRole = role.IsSystemRole,
                 Permissions = permissionStrings
             };
-        }
-        catch
-        {
-            await _unitOfWork.RollbackAsync();
-            throw;
-        }
+        }, ct);
     }
 
-    public async Task UpdateAsync(int id, CreateRoleDto dto)
+    public async Task UpdateAsync(int id, CreateRoleDto dto, CancellationToken ct = default)
     {
-        var role = await _unitOfWork.Roles.GetByIdAsync(id);
+        var role = await _unitOfWork.Roles.GetByIdAsync(id, ct);
         if (role == null)
             throw new NotFoundException($"Role with ID {id} not found");
 
         role.Update(dto.Name, dto.Description);
-        await _unitOfWork.Roles.UpdateAsync(role);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Roles.UpdateAsync(role, ct);
+        await _unitOfWork.CompleteAsync(ct);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var role = await _unitOfWork.Roles.GetByIdAsync(id);
+        var role = await _unitOfWork.Roles.GetByIdAsync(id, ct);
         if (role == null)
             throw new NotFoundException($"Role với ID {id} không tồn tại");
 
-        // QUAN TRỌNG: không cho xóa system role 
         if (role.IsSystemRole)
         {
             _logger.LogWarning("Attempted to delete system role: {RoleName}", role.Name);
             throw new ForbiddenException("Không thể xóa system role");
         }
 
-        await _unitOfWork.Roles.DeleteAsync(id);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Roles.DeleteAsync(id, ct);
+        await _unitOfWork.CompleteAsync(ct);
         _logger.LogInformation("Role deleted: {RoleId} - {RoleName}", id, role.Name);
     }
 
-    public async Task AssignPermissionAsync(int roleId, int permissionId)
+    public async Task AssignPermissionAsync(int roleId, int permissionId, CancellationToken ct = default)
     {
-        if (!await _unitOfWork.Roles.ExistsAsync(roleId))
+        if (!await _unitOfWork.Roles.ExistsAsync(roleId, ct))
             throw new NotFoundException($"Role with ID {roleId} not found");
 
-        if (!await _unitOfWork.Permissions.ExistsAsync(permissionId))
+        if (!await _unitOfWork.Permissions.ExistsAsync(permissionId, ct))
             throw new NotFoundException($"Permission with ID {permissionId} not found");
 
         await _unitOfWork.Roles.AddRolePermissionAsync(
-            RolePermission.Create(roleId, permissionId));
-        await _unitOfWork.CompleteAsync();
+            RolePermission.Create(roleId, permissionId), ct);
+        await _unitOfWork.CompleteAsync(ct);
     }
 
-    public async Task RemovePermissionAsync(int roleId, int permissionId)
+    public async Task RemovePermissionAsync(int roleId, int permissionId, CancellationToken ct = default)
     {
-        if (!await _unitOfWork.Roles.ExistsAsync(roleId))
+        if (!await _unitOfWork.Roles.ExistsAsync(roleId, ct))
             throw new NotFoundException($"Role with ID {roleId} not found");
 
-        await _unitOfWork.Roles.RemoveRolePermissionAsync(roleId, permissionId);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.Roles.RemoveRolePermissionAsync(roleId, permissionId, ct);
+        await _unitOfWork.CompleteAsync(ct);
     }
 }

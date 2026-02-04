@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CLEAN_Pl.Infrastructure.Persistence;
 
+/// <summary>
+/// Unit of Work implementation for managing transactions and coordinating repositories.
+/// </summary>
 public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
@@ -15,12 +18,14 @@ public class UnitOfWork : IUnitOfWork
     private IRoleRepository? _roles;
     private IPermissionRepository? _permissions;
     private ICategoryRepository? _categories;
-    
+
     public UnitOfWork(ApplicationDbContext context)
     {
         _context = context;
     }
-    
+
+    #region Repositories
+
     public IProductRepository Products
     {
         get
@@ -29,7 +34,7 @@ public class UnitOfWork : IUnitOfWork
             return _products;
         }
     }
-    
+
     public IUserRepository Users
     {
         get
@@ -38,7 +43,7 @@ public class UnitOfWork : IUnitOfWork
             return _users;
         }
     }
-    
+
     public IRoleRepository Roles
     {
         get
@@ -47,7 +52,7 @@ public class UnitOfWork : IUnitOfWork
             return _roles;
         }
     }
-    
+
     public IPermissionRepository Permissions
     {
         get
@@ -56,7 +61,7 @@ public class UnitOfWork : IUnitOfWork
             return _permissions;
         }
     }
-    
+
     public ICategoryRepository Categories
     {
         get
@@ -65,30 +70,34 @@ public class UnitOfWork : IUnitOfWork
             return _categories;
         }
     }
-    
-    public async Task<int> CompleteAsync()
+
+    #endregion
+
+    #region Transaction Methods
+
+    public async Task<int> CompleteAsync(CancellationToken ct = default)
     {
-        return await _context.SaveChangesAsync();
+        return await _context.SaveChangesAsync(ct);
     }
-    
-    public async Task BeginTransactionAsync()
+
+    public async Task BeginTransactionAsync(CancellationToken ct = default)
     {
-        _transaction = await _context.Database.BeginTransactionAsync();
+        _transaction = await _context.Database.BeginTransactionAsync(ct);
     }
-    
-    public async Task CommitAsync()
+
+    public async Task CommitAsync(CancellationToken ct = default)
     {
         try
         {
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
             if (_transaction != null)
             {
-                await _transaction.CommitAsync();
+                await _transaction.CommitAsync(ct);
             }
         }
         catch
         {
-            await RollbackAsync();
+            await RollbackAsync(ct);
             throw;
         }
         finally
@@ -100,17 +109,60 @@ public class UnitOfWork : IUnitOfWork
             }
         }
     }
-    
-    public async Task RollbackAsync()
+
+    public async Task RollbackAsync(CancellationToken ct = default)
     {
         if (_transaction != null)
         {
-            await _transaction.RollbackAsync();
+            await _transaction.RollbackAsync(ct);
             await _transaction.DisposeAsync();
             _transaction = null;
         }
     }
-    
+
+    #endregion
+
+    #region ExecuteInTransactionAsync
+
+    /// <summary>
+    /// Executes an action within a transaction. Automatically commits on success, rolls back on exception.
+    /// </summary>
+    public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
+    {
+        await BeginTransactionAsync(ct);
+        try
+        {
+            await action();
+            await CommitAsync(ct);
+        }
+        catch
+        {
+            await RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Executes an action within a transaction and returns a result. Automatically commits on success, rolls back on exception.
+    /// </summary>
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken ct = default)
+    {
+        await BeginTransactionAsync(ct);
+        try
+        {
+            var result = await action();
+            await CommitAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    #endregion
+
     public void Dispose()
     {
         _transaction?.Dispose();

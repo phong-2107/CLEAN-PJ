@@ -5,10 +5,10 @@ namespace CLEAN_Pl.Application.Interfaces;
 
 public interface IProductService
 {
-    Task<IEnumerable<ProductDto>> GetAllAsync();
-    Task<PagedResult<ProductDto>> GetPagedAsync(ProductQueryParameters parameters);
-    Task<ProductDto?> GetByIdAsync(int id);
-    Task<ProductDto> CreateAsync(CreateProductDto dto);
-    Task UpdateAsync(int id, UpdateProductDto dto);
-    Task DeleteAsync(int id);
+    Task<IEnumerable<ProductDto>> GetAllAsync(CancellationToken ct = default);
+    Task<PagedResult<ProductDto>> GetPagedAsync(ProductQueryParameters parameters, CancellationToken ct = default);
+    Task<ProductDto?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<ProductDto> CreateAsync(CreateProductDto dto, CancellationToken ct = default);
+    Task UpdateAsync(int id, UpdateProductDto dto, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
 }

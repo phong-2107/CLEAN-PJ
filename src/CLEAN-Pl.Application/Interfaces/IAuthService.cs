@@ -4,9 +4,9 @@ namespace CLEAN_Pl.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
-    Task<AuthResponseDto> LoginAsync(LoginDto dto);
-    Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto dto);
-    Task RevokeTokenAsync(int userId);
-    Task ChangePasswordAsync(int userId, ChangePasswordDto dto);
+    Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default);
+    Task<AuthResponseDto> LoginAsync(LoginDto dto, CancellationToken ct = default);
+    Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto dto, CancellationToken ct = default);
+    Task RevokeTokenAsync(int userId, CancellationToken ct = default);
+    Task ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct = default);
 }

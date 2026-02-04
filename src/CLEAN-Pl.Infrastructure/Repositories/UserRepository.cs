@@ -14,15 +14,15 @@ public class UserRepository : BaseRepository<User>, IUserRepository
     {
     }
 
-    public override async Task<User?> GetByIdAsync(int id)
+    public override async Task<User?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Id == id);
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
-    public async Task<IEnumerable<User>> GetAllAsync(bool includeInactive = false)
+    public async Task<IEnumerable<User>> GetAllAsync(bool includeInactive = false, CancellationToken ct = default)
     {
         var query = _dbSet
             .Include(u => u.UserRoles)
@@ -34,7 +34,7 @@ public class UserRepository : BaseRepository<User>, IUserRepository
 
         return await query
             .OrderByDescending(u => u.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
     public async Task<(IEnumerable<User> Items, int TotalCount)> GetPagedAsync(
@@ -44,7 +44,8 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         bool? isActive = null,
         int? roleId = null,
         string? sortBy = null,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        CancellationToken ct = default)
     {
         var query = _dbSet
             .Include(u => u.UserRoles)
@@ -67,7 +68,7 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         if (roleId.HasValue)
             query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId.Value));
 
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(ct);
 
         query = sortBy?.ToLower() switch
         {
@@ -80,28 +81,28 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         return (items, totalCount);
     }
 
-    public async Task<User?> GetByUsernameAsync(string username)
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
     {
         return await _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower(), ct);
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
         return await _dbSet
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), ct);
     }
 
-    public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail)
+    public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail, CancellationToken ct = default)
     {
         var normalized = usernameOrEmail.ToLower();
         return await _dbSet
@@ -109,47 +110,47 @@ public class UserRepository : BaseRepository<User>, IUserRepository
                 .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u =>
                 u.Username.ToLower() == normalized ||
-                u.Email.ToLower() == normalized);
+                u.Email.ToLower() == normalized, ct);
     }
 
-    public async Task<bool> UsernameExistsAsync(string username)
+    public async Task<bool> UsernameExistsAsync(string username, CancellationToken ct = default)
     {
-        return await AnyAsync(u => u.Username.ToLower() == username.ToLower());
+        return await AnyAsync(u => u.Username.ToLower() == username.ToLower(), ct);
     }
 
-    public async Task<bool> EmailExistsAsync(string email)
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
     {
-        return await AnyAsync(u => u.Email.ToLower() == email.ToLower());
+        return await AnyAsync(u => u.Email.ToLower() == email.ToLower(), ct);
     }
 
-    public async Task<IEnumerable<Role>> GetUserRolesAsync(int userId)
+    public async Task<IEnumerable<Role>> GetUserRolesAsync(int userId, CancellationToken ct = default)
     {
         return await _context.UserRoles
             .Where(ur => ur.UserId == userId)
             .Include(ur => ur.Role)
             .Select(ur => ur.Role)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<Permission>> GetUserPermissionsAsync(int userId)
+    public async Task<IEnumerable<Permission>> GetUserPermissionsAsync(int userId, CancellationToken ct = default)
     {
         return await _context.UserRoles
             .Where(ur => ur.UserId == userId)
             .SelectMany(ur => ur.Role.RolePermissions)
             .Select(rp => rp.Permission)
             .Distinct()
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task AddUserRoleAsync(UserRole userRole)
+    public async Task AddUserRoleAsync(UserRole userRole, CancellationToken ct = default)
     {
-        await _context.UserRoles.AddAsync(userRole);
+        await _context.UserRoles.AddAsync(userRole, ct);
     }
 
-    public async Task RemoveUserRoleAsync(int userId, int roleId)
+    public async Task RemoveUserRoleAsync(int userId, int roleId, CancellationToken ct = default)
     {
         var userRole = await _context.UserRoles
-            .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+            .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId, ct);
 
         if (userRole != null)
         {
