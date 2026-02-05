@@ -10,7 +10,7 @@ import {
     LogOut,
     Menu,
     X,
-    ShoppingCart,
+    Activity,
     Users,
     MessageSquare,
     Settings,
@@ -45,7 +45,7 @@ const navSections: NavSection[] = [
         title: 'MAIN',
         items: [
             { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-            { label: 'Orders', icon: ShoppingCart, href: '/dashboard/orders' },
+            { label: 'Audit Logs', icon: Activity, href: '/dashboard/audit-logs' },
             { label: 'Customers', icon: Users, href: '/dashboard/customers' }, // Renaming to Customers for now, can be Users
             { label: 'Messages', icon: MessageSquare, href: '/dashboard/messages' },
         ],
