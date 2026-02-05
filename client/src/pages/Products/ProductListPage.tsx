@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import productService from '../../services/productService';
 import { Product } from '../../types/product';
@@ -6,9 +7,10 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Plus, Pencil, Trash2, Search, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 
 export const ProductListPage = () => {
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -16,7 +18,7 @@ export const ProductListPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({});
     const [isEditing, setIsEditing] = useState(false);
-    const [error, setError] = useState('');
+    const [_error, setError] = useState('');
     const [accessError, setAccessError] = useState('');
 
     // Permission check helper
@@ -39,6 +41,15 @@ export const ProductListPage = () => {
         }
     };
 
+    const handleAddProduct = () => {
+        if (!canEdit) {
+            setAccessError('You do not have permission to perform this action.');
+            setTimeout(() => setAccessError(''), 3000);
+            return;
+        }
+        navigate('/dashboard/products/add');
+    };
+
     const handleOpenModal = (product?: Product) => {
         if (!canEdit) {
             setAccessError('You do not have permission to perform this action.');
@@ -48,11 +59,8 @@ export const ProductListPage = () => {
         if (product) {
             setCurrentProduct(product);
             setIsEditing(true);
-        } else {
-            setCurrentProduct({});
-            setIsEditing(false);
+            setIsModalOpen(true);
         }
-        setIsModalOpen(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -76,11 +84,7 @@ export const ProductListPage = () => {
         e.preventDefault();
         try {
             if (isEditing && currentProduct.id) {
-                // Fix: Ensure currentProduct has all required fields for UpdateProductRequest
-                // For simplicity, we assume the form handles it, but in real app we validate
                 await productService.update(currentProduct.id, currentProduct as any);
-            } else {
-                await productService.create(currentProduct as any);
             }
             setIsModalOpen(false);
             fetchProducts();
@@ -101,7 +105,7 @@ export const ProductListPage = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Products</h1>
                     <p className="text-gray-500">Manage your product inventory</p>
                 </div>
-                <Button onClick={() => handleOpenModal()}>
+                <Button onClick={handleAddProduct}>
                     <Plus className="mr-2 h-4 w-4" /> Add Product
                 </Button>
             </div>
