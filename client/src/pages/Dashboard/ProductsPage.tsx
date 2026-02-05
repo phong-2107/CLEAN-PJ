@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Search, Plus, Filter, Edit, Trash2, Package, Eye, RefreshCw } from 'lucide-react';
 import { AddProductModal } from '../../components/products/AddProductModal';
+import { ProductDetailModal } from '../../components/modals';
 import productService from '../../services/productService';
 import { Product } from '../../types/product';
 
@@ -18,6 +19,10 @@ export const ProductsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Detail modal state
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const pageSize = 10;
 
@@ -83,6 +88,12 @@ export const ProductsPage = () => {
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Handle row click for detail modal
+    const handleRowClick = (product: Product) => {
+        setSelectedProduct(product);
+        setIsDetailModalOpen(true);
+    };
 
     const columns: Column<Product>[] = [
         {
@@ -186,6 +197,7 @@ export const ProductsPage = () => {
                     <DataTable
                         columns={columns}
                         data={filteredProducts}
+                        onRowClick={handleRowClick}
                         emptyMessage={isLoading ? "Loading products..." : "No products found"}
                         renderActions={(product) => (
                             <div className="flex justify-end gap-1">
@@ -232,6 +244,13 @@ export const ProductsPage = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={handleProductCreated}
+            />
+
+            {/* Product Detail Modal */}
+            <ProductDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                product={selectedProduct}
             />
         </div>
     );

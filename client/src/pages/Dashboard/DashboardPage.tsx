@@ -1,90 +1,114 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { Tabs } from '../../components/ui/Tabs';
-import { DataTable, Column } from '../../components/ui/DataTable';
-import { Pagination } from '../../components/ui/Pagination';
-import { Avatar } from '../../components/ui/Avatar';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
     Package,
     Users,
-    ShoppingCart,
-    DollarSign,
+    Activity,
     TrendingUp,
     TrendingDown,
-    Filter,
-    Search,
-    Download,
-    Plus,
-    MoreVertical
+    RefreshCw,
+    Sparkles
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-// Mock data for the table
-interface Product {
-    id: string;
-    name: string;
-    email: string;
-    location: string;
-    orders: number;
-    spent: number;
-    avatar?: string;
-}
+// Import dashboard components
+import { QuickAddProduct } from '../../components/dashboard/QuickAddProduct';
+import { ActivityFeed } from '../../components/dashboard/ActivityFeed';
+import { TrafficOverview } from '../../components/dashboard/TrafficOverview';
+import { ProductOverview } from '../../components/dashboard/ProductOverview';
 
-const mockProducts: Product[] = [
-    { id: '1', name: 'Ramisa Sanjana', email: 'ramisa@gmail.com', location: '14 Clifton Down Road, UK', orders: 7, spent: 3331.00 },
-    { id: '2', name: 'Mohua Amin', email: 'mohua@gmail.com', location: '405 Kings Road, Chelsea, London', orders: 44, spent: 74331.00 },
-    { id: '3', name: 'Estiaq Noor', email: 'estiaqnoor@gmail.com', location: '176 Finchley Road, London', orders: 4, spent: 2331.00 },
-    { id: '4', name: 'Reaz Nahid', email: 'reaz@hotmail.com', location: '12 South Bridge, Edinburgh, UK', orders: 27, spent: 44131.89 },
-    { id: '5', name: 'Rabbi Amin', email: 'amin@yourmail.com', location: '176 Finchley Road, London', orders: 16, spent: 7331.00 },
-    { id: '6', name: 'Sakib Al Baky', email: 'sakib@yahoo.com', location: '405 Kings Road, Chelsea, London', orders: 47, spent: 8231.00 },
-    { id: '7', name: 'Maria Nur', email: 'maria@gmail.com', location: '80 High Street, Winchester', orders: 12, spent: 9631.00 },
-    { id: '8', name: 'Ahmed Baky', email: 'maria@gmail.com', location: '80 High Street, Winchester', orders: 12, spent: 9631.00 },
-];
+// Import services
+import dashboardService from '../../services/dashboardService';
+import { DashboardStats } from '../../types/dashboard';
 
-const tabs = [
-    { id: 'all', label: 'All Customers' },
-    { id: 'new', label: 'New Customers' },
-    { id: 'europe', label: 'From Europe' },
-    { id: 'asia', label: 'Asia' },
-    { id: 'others', label: 'Others' },
-];
-
+// Stat Card Component
 interface StatCardProps {
     title: string;
-    value: string;
-    change: number;
-    trend: 'up' | 'down';
+    value: string | number;
+    subtitle?: string;
+    change?: number;
+    trend?: 'up' | 'down' | 'neutral';
     icon: React.ElementType;
     iconColor: string;
     iconBg: string;
+    isLoading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, change, trend, icon: Icon, iconColor, iconBg }) => (
-    <Card className="hover:shadow-md transition-shadow">
-        <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-                <div>
+const StatCard: React.FC<StatCardProps> = ({
+    title,
+    value,
+    subtitle,
+    change,
+    trend = 'neutral',
+    icon: Icon,
+    iconColor,
+    iconBg,
+    isLoading = false
+}) => (
+    <Card className={cn(
+        'group relative overflow-hidden',
+        'hover:shadow-lg hover:shadow-gray-200/50',
+        'transition-all duration-300 ease-out',
+        'hover:-translate-y-0.5'
+    )}>
+        {/* Gradient overlay on hover */}
+        <div className={cn(
+            'absolute inset-0 opacity-0 group-hover:opacity-100',
+            'bg-gradient-to-br from-white via-transparent to-gray-50/50',
+            'transition-opacity duration-300'
+        )} />
+
+        <CardContent className="p-6 relative">
+            <div className="flex items-start justify-between">
+                <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-500">{title}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-                    <div className="flex items-center gap-1 mt-2">
-                        {trend === 'up' ? (
-                            <TrendingUp className="h-4 w-4 text-emerald-500" />
-                        ) : (
-                            <TrendingDown className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={cn(
-                            "text-sm font-medium",
-                            trend === 'up' ? 'text-emerald-600' : 'text-red-600'
-                        )}>
-                            {change}%
-                        </span>
-                        <span className="text-sm text-gray-400">from last month</span>
-                    </div>
+
+                    {isLoading ? (
+                        <div className="space-y-2">
+                            <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-3xl font-bold text-gray-900 tracking-tight">
+                                {typeof value === 'number' ? value.toLocaleString() : value}
+                            </p>
+
+                            {change !== undefined && (
+                                <div className="flex items-center gap-1.5">
+                                    {trend === 'up' ? (
+                                        <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                    ) : trend === 'down' ? (
+                                        <TrendingDown className="h-4 w-4 text-red-500" />
+                                    ) : null}
+                                    <span className={cn(
+                                        "text-sm font-medium",
+                                        trend === 'up' ? 'text-emerald-600' :
+                                            trend === 'down' ? 'text-red-600' :
+                                                'text-gray-500'
+                                    )}>
+                                        {change > 0 ? '+' : ''}{change}%
+                                    </span>
+                                    <span className="text-sm text-gray-400">vs last month</span>
+                                </div>
+                            )}
+
+                            {subtitle && !change && (
+                                <p className="text-sm text-gray-500">{subtitle}</p>
+                            )}
+                        </>
+                    )}
                 </div>
-                <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center", iconBg)}>
-                    <Icon className={cn("h-6 w-6", iconColor)} />
+
+                <div className={cn(
+                    "h-14 w-14 rounded-2xl flex items-center justify-center",
+                    "shadow-sm transition-all duration-300",
+                    "group-hover:scale-110 group-hover:shadow-md",
+                    iconBg
+                )}>
+                    <Icon className={cn("h-7 w-7", iconColor)} />
                 </div>
             </div>
         </CardContent>
@@ -93,178 +117,150 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, trend, icon: 
 
 export const DashboardPage = () => {
     const { user } = useAuthStore();
-    const [activeTab, setActiveTab] = useState('all');
-    const [currentPage, setCurrentPage] = useState(3);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    const columns: Column<Product>[] = [
-        {
-            key: 'name',
-            header: 'Customer',
-            render: (item) => (
-                <div className="flex items-center gap-3">
-                    <Avatar size="sm" fallback={item.name} />
-                    <span className="font-medium text-gray-900">{item.name}</span>
-                </div>
-            ),
-        },
-        {
-            key: 'email',
-            header: 'Email',
-            render: (item) => (
-                <span className="text-gray-500">{item.email}</span>
-            ),
-        },
-        {
-            key: 'location',
-            header: 'Location',
-            render: (item) => (
-                <span className="text-gray-500">{item.location}</span>
-            ),
-        },
-        {
-            key: 'orders',
-            header: 'Orders',
-            render: (item) => (
-                <span className="text-gray-900">{item.orders}</span>
-            ),
-        },
-        {
-            key: 'spent',
-            header: 'Spent',
-            render: (item) => (
-                <span className="font-medium text-gray-900">
-                    ${item.spent.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-            ),
-        },
-    ];
+    // Fetch dashboard stats
+    const fetchStats = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await dashboardService.getStats();
+            setStats(data);
+        } catch (err) {
+            console.error('Failed to fetch dashboard stats:', err);
+            setError('Failed to load dashboard data');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats, refreshKey]);
+
+    // Handle product added - refresh stats
+    const handleProductAdded = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+    }, []);
+
+    // Handle refresh all
+    const handleRefreshAll = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+    }, []);
+
+    // Greeting based on time of day
+    const greeting = useMemo(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good morning';
+        if (hour < 18) return 'Good afternoon';
+        return 'Good evening';
+    }, []);
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-1">
-                <h1 className="text-2xl font-bold text-gray-900">
-                    Welcome back, {user?.firstName || 'User'} 👋
-                </h1>
-                <p className="text-gray-500">
-                    Here's what's happening with your store today.
-                </p>
+        <div className="space-y-8 pb-8">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                            {greeting}, {user?.firstName || 'User'}
+                        </h1>
+                        <Sparkles className="h-6 w-6 text-amber-400" />
+                    </div>
+                    <p className="text-gray-500">
+                        Here's what's happening with your store today.
+                    </p>
+                </div>
+
+                <Button
+                    variant="secondary"
+                    onClick={handleRefreshAll}
+                    disabled={isLoading}
+                    className="gap-2 self-start lg:self-auto"
+                >
+                    <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+                    Refresh Dashboard
+                </Button>
             </div>
+
+            {/* Error Banner */}
+            {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 flex items-center justify-between">
+                    <span>{error}</span>
+                    <Button variant="ghost" size="sm" onClick={fetchStats}>
+                        Retry
+                    </Button>
+                </div>
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
-                    title="Total Revenue"
-                    value="$45,231.89"
-                    change={20.1}
-                    trend="up"
-                    icon={DollarSign}
-                    iconColor="text-emerald-600"
-                    iconBg="bg-emerald-50"
-                />
-                <StatCard
-                    title="Total Orders"
-                    value="2,350"
-                    change={15.5}
-                    trend="up"
-                    icon={ShoppingCart}
-                    iconColor="text-blue-600"
-                    iconBg="bg-blue-50"
-                />
-                <StatCard
-                    title="Active Customers"
-                    value="1,234"
-                    change={3.2}
-                    trend="up"
-                    icon={Users}
-                    iconColor="text-violet-600"
-                    iconBg="bg-violet-50"
-                />
-                <StatCard
                     title="Total Products"
-                    value="128"
-                    change={-2.4}
-                    trend="down"
+                    value={stats?.totalProducts ?? 0}
+                    subtitle="Products in catalog"
                     icon={Package}
                     iconColor="text-amber-600"
-                    iconBg="bg-amber-50"
+                    iconBg="bg-gradient-to-br from-amber-50 to-orange-100"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    title="Total Users"
+                    value={stats?.totalUsers ?? 0}
+                    subtitle="Registered users"
+                    icon={Users}
+                    iconColor="text-violet-600"
+                    iconBg="bg-gradient-to-br from-violet-50 to-purple-100"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    title="Recent Activity"
+                    value={stats?.recentActivityCount ?? 0}
+                    subtitle="Audit log entries"
+                    icon={Activity}
+                    iconColor="text-blue-600"
+                    iconBg="bg-gradient-to-br from-blue-50 to-cyan-100"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    title="Products Added"
+                    value={stats?.recentProductsCount ?? 0}
+                    subtitle="All time"
+                    icon={TrendingUp}
+                    iconColor="text-emerald-600"
+                    iconBg="bg-gradient-to-br from-emerald-50 to-green-100"
+                    isLoading={isLoading}
                 />
             </div>
 
-            {/* Customers Table */}
-            <Card>
-                <CardHeader className="pb-0 space-y-4">
-                    {/* Tabs and Actions Row */}
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <Tabs
-                            tabs={tabs}
-                            activeTab={activeTab}
-                            onChange={setActiveTab}
-                            className="border-b-0"
-                        />
-                        <div className="flex items-center gap-2">
-                            <Button variant="secondary" size="sm" className="gap-2">
-                                <Download className="h-4 w-4" />
-                                Export
-                            </Button>
-                            <Button size="sm" className="gap-2 bg-primary-600 hover:bg-primary-700">
-                                <Plus className="h-4 w-4" />
-                                Add Customers
-                            </Button>
-                        </div>
-                    </div>
+            {/* Quick Add Product */}
+            <QuickAddProduct onProductAdded={handleProductAdded} />
 
-                    {/* Search and Filter Row */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pb-4">
-                        <Button variant="secondary" size="sm" className="gap-2">
-                            <Filter className="h-4 w-4" />
-                            Filter
-                        </Button>
-                        <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search customer..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-4 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                        </div>
-                        <div className="ml-auto flex items-center gap-2">
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M3 8h18M3 12h18M3 16h18M3 20h18" />
-                                </svg>
-                            </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                                <MoreVertical className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent className="p-0">
-                    <DataTable
-                        columns={columns}
-                        data={mockProducts}
-                        renderActions={() => (
-                            <button className="p-1 text-gray-400 hover:text-gray-600">
-                                <MoreVertical className="h-4 w-4" />
-                            </button>
-                        )}
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Activity Feed - Takes 2 columns */}
+                <div className="lg:col-span-2">
+                    <ActivityFeed
+                        key={`activity-${refreshKey}`}
+                        limit={8}
+                        autoRefresh={true}
+                        refreshInterval={60000}
                     />
+                </div>
 
-                    {/* Pagination */}
-                    <div className="py-4 border-t border-gray-100">
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={24}
-                            onPageChange={setCurrentPage}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                {/* Traffic Overview - Takes 1 column */}
+                <div>
+                    <TrafficOverview key={`traffic-${refreshKey}`} />
+                </div>
+            </div>
+
+            {/* Product Overview Section */}
+            <ProductOverview key={`products-${refreshKey}`} limit={5} />
         </div>
     );
 };
+
+export default DashboardPage;

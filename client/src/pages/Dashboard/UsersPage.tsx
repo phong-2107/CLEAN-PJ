@@ -1,85 +1,219 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { DataTable, Column } from '../../components/ui/DataTable';
 import { Button } from '../../components/ui/Button';
 import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';
-import { Search, Plus, Filter, Shield, Trash2, Edit } from 'lucide-react';
-
-interface User {
-    id: string;
-    fullName: string;
-    email: string;
-    role: string;
-    status: 'active' | 'inactive';
-    lastActive: string;
-}
-
-const mockUsers: User[] = [
-    { id: '1', fullName: 'Sarah Johnson', email: 'sarah@example.com', role: 'Admin', status: 'active', lastActive: '2 mins ago' },
-    { id: '2', fullName: 'Michael Chen', email: 'michael@example.com', role: 'Manager', status: 'active', lastActive: '1 hour ago' },
-    { id: '3', fullName: 'Emma Wilson', email: 'emma@example.com', role: 'User', status: 'inactive', lastActive: '2 days ago' },
-    { id: '4', fullName: 'James brown', email: 'james@example.com', role: 'User', status: 'active', lastActive: '5 mins ago' },
-    { id: '5', fullName: 'Lisa Anderson', email: 'lisa@example.com', role: 'Manager', status: 'active', lastActive: '1 day ago' },
-];
+import {
+    Search,
+    Plus,
+    Filter,
+    Shield,
+    Trash2,
+    Edit,
+    RefreshCw,
+    Loader2,
+    AlertCircle,
+    Users
+} from 'lucide-react';
+import { cn } from '../../utils/cn';
+import userService from '../../services/userService';
+import { UserDto } from '../../types/user';
+import { UserFormModal } from '../../components/modals/UserFormModal';
 
 export const UsersPage = () => {
+    const [users, setUsers] = useState<UserDto[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const columns: Column<User>[] = [
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+    const [selectedUser, setSelectedUser] = useState<UserDto | null>(null);
+
+    // Fetch users from API
+    const fetchUsers = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await userService.getAll();
+            setUsers(data);
+        } catch (err: any) {
+            console.error('Failed to fetch users:', err);
+            setError('Failed to load users. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
+
+    // Handle create user
+    const handleAddUser = useCallback(() => {
+        setSelectedUser(null);
+        setModalMode('create');
+        setIsModalOpen(true);
+    }, []);
+
+    // Handle edit user
+    const handleEditUser = useCallback((user: UserDto) => {
+        setSelectedUser(user);
+        setModalMode('edit');
+        setIsModalOpen(true);
+    }, []);
+
+    // Handle delete user
+    const handleDeleteUser = useCallback(async (userId: number) => {
+        if (!window.confirm('Are you sure you want to delete this user?')) return;
+
+        try {
+            await userService.delete(userId);
+            setUsers(prev => prev.filter(u => u.id !== userId));
+        } catch (err) {
+            console.error('Failed to delete user:', err);
+            setError('Failed to delete user');
+        }
+    }, []);
+
+    // Handle form submit
+    const handleFormSubmit = useCallback(async (data: any) => {
+        if (modalMode === 'create') {
+            await userService.create({
+                username: data.username,
+                email: data.email,
+                password: data.password,
+                firstName: data.firstName || undefined,
+                lastName: data.lastName || undefined,
+                roleIds: data.roleIds
+            });
+        } else if (selectedUser) {
+            await userService.update(selectedUser.id, {
+                email: data.email,
+                firstName: data.firstName || undefined,
+                lastName: data.lastName || undefined
+            });
+        }
+        fetchUsers();
+    }, [modalMode, selectedUser, fetchUsers]);
+
+    // Format relative time
+    const formatRelativeTime = (date: string | undefined | null): string => {
+        if (!date) return 'Never';
+        const now = new Date();
+        const past = new Date(date);
+        const diffMs = now.getTime() - past.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} mins ago`;
+        if (diffHours < 24) return `${diffHours} hours ago`;
+        if (diffDays < 7) return `${diffDays} days ago`;
+        return past.toLocaleDateString();
+    };
+
+    // Filter users by search query
+    const filteredUsers = users.filter(user =>
+        user.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.username?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const columns: Column<UserDto>[] = [
         {
             key: 'fullName',
             header: 'User',
             render: (user) => (
                 <div className="flex items-center gap-3">
-                    <Avatar fallback={user.fullName} size="sm" />
+                    <Avatar fallback={user.fullName || user.username} size="sm" />
                     <div>
-                        <div className="font-medium text-gray-900">{user.fullName}</div>
+                        <div className="font-medium text-gray-900">{user.fullName || user.username}</div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'role',
-            header: 'Role',
+            key: 'roles',
+            header: 'Roles',
             render: (user) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <Shield className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-700 font-medium">{user.role}</span>
+                    {user.roles && user.roles.length > 0 ? (
+                        user.roles.map((role, index) => (
+                            <Badge key={index} variant={role === 'Admin' ? 'info' : 'default'}>
+                                {role}
+                            </Badge>
+                        ))
+                    ) : (
+                        <span className="text-sm text-gray-400">No roles</span>
+                    )}
                 </div>
             ),
         },
         {
-            key: 'status',
+            key: 'isActive',
             header: 'Status',
             render: (user) => (
-                <Badge variant={user.status === 'active' ? 'success' : 'default'}>
-                    {user.status}
+                <Badge variant={user.isActive ? 'success' : 'default'}>
+                    {user.isActive ? 'Active' : 'Inactive'}
                 </Badge>
             ),
         },
         {
-            key: 'lastActive',
+            key: 'lastLoginAt',
             header: 'Last Active',
             render: (user) => (
-                <span className="text-sm text-gray-500">{user.lastActive}</span>
+                <span className="text-sm text-gray-500">
+                    {formatRelativeTime(user.lastLoginAt)}
+                </span>
             ),
         },
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <Users className="h-6 w-6 text-primary-600" />
+                        Users
+                    </h1>
                     <p className="text-gray-500 mt-1">Manage user access and roles.</p>
                 </div>
-                <Button className="gap-2 bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-500/20">
-                    <Plus className="h-4 w-4" />
-                    Add User
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="secondary"
+                        onClick={fetchUsers}
+                        disabled={isLoading}
+                        className="gap-2"
+                    >
+                        <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+                        Refresh
+                    </Button>
+                    <Button
+                        onClick={handleAddUser}
+                        className="gap-2 bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-500/20"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add User
+                    </Button>
+                </div>
             </div>
+
+            {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>{error}</span>
+                    <Button variant="ghost" size="sm" onClick={fetchUsers} className="ml-auto">
+                        Retry
+                    </Button>
+                </div>
+            )}
 
             <Card>
                 <CardHeader className="pb-0">
@@ -95,6 +229,9 @@ export const UsersPage = () => {
                             />
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Badge variant="info" className="px-3 py-1">
+                                {filteredUsers.length} users
+                            </Badge>
                             <Button variant="secondary" className="gap-2 flex-1 sm:flex-none">
                                 <Filter className="h-4 w-4" />
                                 Filter
@@ -103,22 +240,56 @@ export const UsersPage = () => {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <DataTable
-                        columns={columns}
-                        data={mockUsers}
-                        renderActions={() => (
-                            <div className="flex justify-end gap-2">
-                                <button className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                                    <Edit className="h-4 w-4" />
-                                </button>
-                                <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
-                        )}
-                    />
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-16">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+                            <span className="ml-3 text-gray-500">Loading users...</span>
+                        </div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="text-center py-16">
+                            <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No users found</p>
+                        </div>
+                    ) : (
+                        <DataTable
+                            columns={columns}
+                            data={filteredUsers}
+                            renderActions={(user) => (
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={() => handleEditUser(user)}
+                                        className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteUser(user.id)}
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            )}
+                        />
+                    )}
                 </CardContent>
             </Card>
+
+            {/* User Form Modal */}
+            <UserFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleFormSubmit}
+                mode={modalMode}
+                initialData={selectedUser ? {
+                    id: selectedUser.id,
+                    username: selectedUser.username,
+                    email: selectedUser.email,
+                    firstName: selectedUser.firstName || '',
+                    lastName: selectedUser.lastName || '',
+                    roleIds: []
+                } : undefined}
+            />
         </div>
     );
 };
