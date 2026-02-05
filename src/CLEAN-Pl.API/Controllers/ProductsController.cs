@@ -10,90 +10,108 @@ namespace CLEAN_Pl.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ProductsController : ControllerBase
+public class ProductsController(
+    IProductService productService,
+    ILogger<ProductsController> logger) : ControllerBase
 {
-    private readonly IProductService _productService;
-    private readonly ILogger<ProductsController> _logger;
+    #region Public Endpoints (Anonymous Access)
 
-    public ProductsController(
-        IProductService productService,
-        ILogger<ProductsController> logger)
-    {
-        _productService = productService;
-        _logger = logger;
-    }
-
+    /// <summary>
+    /// Lấy danh sách products có phân trang
+    /// </summary>
     [HttpGet("paged")]
-    [Permission("Product.Read")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(PagedResult<ProductDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<ProductDto>>> GetPaged([FromQuery] ProductQueryParameters parameters)
+    public async Task<ActionResult<PagedResult<ProductDto>>> GetPaged(
+        [FromQuery] ProductQueryParameters parameters,
+        CancellationToken ct = default)
     {
-        var result = await _productService.GetPagedAsync(parameters);
+        var result = await productService.GetPagedAsync(parameters, ct);
         return Ok(result);
     }
 
-    // Lấy tất cả products
+    /// <summary>
+    /// Lấy tất cả products
+    /// </summary>
     [HttpGet]
-    [Permission("Product.Read")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll(CancellationToken ct = default)
     {
-        var products = await _productService.GetAllAsync();
+        var products = await productService.GetAllAsync(ct);
         return Ok(products);
     }
 
-  
-    // Get product by ID
-    [HttpGet("{id}")]
-    [Permission("Product.Read")]
+    /// <summary>
+    /// Lấy chi tiết product theo ID
+    /// </summary>
+    [HttpGet("{id:int}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<ProductDto>> GetById(int id)
+    public async Task<ActionResult<ProductDto>> GetById(int id, CancellationToken ct = default)
     {
-        var product = await _productService.GetByIdAsync(id);
+        var product = await productService.GetByIdAsync(id, ct);
         if (product == null)
             return NotFound();
 
         return Ok(product);
     }
 
-    // Create a new product
+    #endregion
+
+    #region Protected Endpoints (Require Authentication + Permission)
+
+    /// <summary>
+    /// Tạo product mới
+    /// </summary>
     [HttpPost]
     [Permission("Product.Create")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<ProductDto>> Create([FromBody] CreateProductDto dto)
+    public async Task<ActionResult<ProductDto>> Create(
+        [FromBody] CreateProductDto dto,
+        CancellationToken ct = default)
     {
-        var product = await _productService.CreateAsync(dto);
+        var product = await productService.CreateAsync(dto, ct);
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
-    // Update product
-    [HttpPut("{id}")]
+    /// <summary>
+    /// Cập nhật product 
+    /// </summary>
+    [HttpPut("{id:int}")]
     [Permission("Product.Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto dto)
+    public async Task<IActionResult> Update(
+        int id,
+        [FromBody] UpdateProductDto dto,
+        CancellationToken ct = default)
     {
-        await _productService.UpdateAsync(id, dto);
+        await productService.UpdateAsync(id, dto, ct);
         return NoContent();
     }
 
-    // Xóa product (hard delete)
-    [HttpDelete("{id}")]
+    /// <summary>
+    /// Xóa product 
+    /// </summary>
+    [HttpDelete("{id:int}")]
     [Permission("Product.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct = default)
     {
-        await _productService.DeleteAsync(id);
+        await productService.DeleteAsync(id, ct);
         return NoContent();
     }
+
+    #endregion
 }
