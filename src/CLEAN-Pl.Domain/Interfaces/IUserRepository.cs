@@ -18,7 +18,6 @@ public interface IUserRepository : IBaseRepository<User>
         string? sortBy = null,
         bool sortDescending = false,
         CancellationToken ct = default);
-
     Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default);
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail, CancellationToken ct = default);

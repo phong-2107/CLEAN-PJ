@@ -19,7 +19,6 @@ public class UnitOfWork : IUnitOfWork
     private IPermissionRepository? _permissions;
     private ICategoryRepository? _categories;
     private IAuditLogRepository? _auditLogs;
-    
     public UnitOfWork(ApplicationDbContext context)
     {
         _context = context;
@@ -44,7 +43,6 @@ public class UnitOfWork : IUnitOfWork
             return _users;
         }
     }
-
     public IRoleRepository Roles
     {
         get
@@ -72,12 +70,6 @@ public class UnitOfWork : IUnitOfWork
         }
     }
 
-    #endregion
-
-    #region Transaction Methods
-
-    public async Task<int> CompleteAsync(CancellationToken ct = default)
-    
     public IAuditLogRepository AuditLogs
     {
         get
@@ -86,8 +78,12 @@ public class UnitOfWork : IUnitOfWork
             return _auditLogs;
         }
     }
-    
-    public async Task<int> CompleteAsync()
+
+    #endregion
+
+    #region Transaction Methods
+
+    public async Task<int> CompleteAsync(CancellationToken ct = default)
     {
         return await _context.SaveChangesAsync(ct);
     }
@@ -136,9 +132,6 @@ public class UnitOfWork : IUnitOfWork
 
     #region ExecuteInTransactionAsync
 
-    /// <summary>
-    /// Executes an action within a transaction. Automatically commits on success, rolls back on exception.
-    /// </summary>
     public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
     {
         await BeginTransactionAsync(ct);
@@ -155,7 +148,7 @@ public class UnitOfWork : IUnitOfWork
     }
 
     /// <summary>
-    /// Executes an action within a transaction and returns a result. Automatically commits on success, rolls back on exception.
+    /// Executes an action within a transaction.
     /// </summary>
     public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken ct = default)
     {

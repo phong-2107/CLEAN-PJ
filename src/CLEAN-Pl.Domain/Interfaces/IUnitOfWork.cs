@@ -33,12 +33,9 @@ public interface IUnitOfWork : IDisposable
     Task RollbackAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Executes an action within a transaction. Automatically commits on success, rolls back on exception.
+    /// Executes an action within a transaction.
     /// </summary>
     Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default);
 
-    /// <summary>
-    /// Executes an action within a transaction and returns a result. Automatically commits on success, rolls back on exception.
-    /// </summary>
     Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken ct = default);
 }

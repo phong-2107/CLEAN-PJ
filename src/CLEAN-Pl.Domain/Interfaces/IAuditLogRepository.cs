@@ -2,10 +2,6 @@ using CLEAN_Pl.Domain.Entities;
 using CLEAN_Pl.Domain.Enums;
 
 namespace CLEAN_Pl.Domain.Interfaces;
-
-/// <summary>
-/// Specialized repository for Audit Log queries (Read-only, Filter-heavy).
-/// </summary>
 public interface IAuditLogRepository
 {
     /// <summary>

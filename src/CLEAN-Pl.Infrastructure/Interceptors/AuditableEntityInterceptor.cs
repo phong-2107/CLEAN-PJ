@@ -12,9 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace CLEAN_Pl.Infrastructure.Interceptors;
 
 /// <summary>
-/// EF Core interceptor that automatically:
-/// 1. Updates CreatedBy/UpdatedBy on AuditableEntity
-/// 2. Queues AuditLog entries for background processing (non-blocking)
+/// EF Core interceptor that automatically.
 /// </summary>
 public sealed class AuditableEntityInterceptor(
     ICurrentUserService currentUserService,
@@ -104,7 +102,6 @@ public sealed class AuditableEntityInterceptor(
             }
             catch (Exception ex)
             {
-                // Don't fail the main transaction if audit queue fails
                 logger.LogWarning(ex, "Failed to queue {Count} audit logs", auditLogs.Count);
             }
         }
@@ -168,8 +165,6 @@ public sealed class AuditableEntityInterceptor(
         var keyProperties = entry.Properties
             .Where(p => p.Metadata.IsPrimaryKey())
             .Select(p => p.CurrentValue?.ToString() ?? string.Empty);
-
-        // Normalize keys to string for composite or non-int PKs.
         return string.Join(",", keyProperties);
     }
 
