@@ -5,11 +5,13 @@ import { HomePage } from './pages/Home/HomePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { ProductsPage } from './pages/Dashboard/ProductsPage';
 import { ProductDetailPage } from './pages/Dashboard/ProductDetailPage';
+import { AddProductPage } from './pages/Products/AddProductPage';
 import { UsersPage } from './pages/Dashboard/UsersPage';
 import { RolesPage } from './pages/Dashboard/RolesPage';
 import { RoleDetailPage } from './pages/Dashboard/RoleDetailPage';
 import { PermissionsPage } from './pages/Dashboard/PermissionsPage';
 import { SettingsPage } from './pages/Dashboard/SettingsPage';
+import { AuditLogsPage } from './pages/Dashboard/AuditLogsPage';
 import { PlaceholderPage } from './pages/Dashboard/PlaceholderPage';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { useAuthStore } from './store/useAuthStore';
@@ -54,6 +56,7 @@ function App() {
                 >
                     <Route index element={<DashboardPage />} />
                     <Route path="products" element={<ProductsPage />} />
+                    <Route path="products/add" element={<AddProductPage />} />
                     <Route path="products/:id" element={<ProductDetailPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="users" element={<UsersPage />} />
@@ -63,7 +66,7 @@ function App() {
                     <Route path="permissions" element={<PermissionsPage />} />
 
                     {/* Placeholder Routes */}
-                    <Route path="orders" element={<PlaceholderPage title="Orders Management" description="Track and fulfill customer orders efficiently." />} />
+                    <Route path="audit-logs" element={<AuditLogsPage />} />
                     <Route path="messages" element={<PlaceholderPage title="Messages" description="Centralized communication hub for customers and team." />} />
                     <Route path="integrations" element={<PlaceholderPage title="Integrations" description="Connect your favorite tools and services." />} />
                     <Route path="analytics" element={<PlaceholderPage title="Analytics" description="Deep dive into your business performance metrics." />} />
