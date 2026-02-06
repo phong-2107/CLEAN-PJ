@@ -14,12 +14,14 @@ interface ModalProps {
     size?: ModalSize;
 }
 
+import { createPortal } from 'react-dom';
+
 const sizeClasses: Record<ModalSize, string> = {
     sm: 'max-w-sm',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-6xl'
+    xl: 'max-w-5xl', // Increased for better width
+    full: 'max-w-7xl'
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -40,9 +42,9 @@ export const Modal: React.FC<ModalProps> = ({
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
             onClick={onClose}
         >
             <div
@@ -70,6 +72,7 @@ export const Modal: React.FC<ModalProps> = ({
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

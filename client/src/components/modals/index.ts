@@ -7,3 +7,5 @@ export { ProductDetailModal } from './ProductDetailModal';
 export { PermissionDetailModal } from './PermissionDetailModal';
 export { CategoryDetailModal } from './CategoryDetailModal';
 export { PermissionFormModal } from './PermissionFormModal';
+export { UserPermissionManagementModal } from './UserPermissionManagementModal';
+export { UserDetailModal } from './UserDetailModal';
