@@ -1,7 +1,9 @@
 using CLEAN_Pl.Domain.Interfaces;
 using CLEAN_Pl.Infrastructure.Data;
 using CLEAN_Pl.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 
 namespace CLEAN_Pl.Infrastructure.Persistence;
 
@@ -11,6 +13,7 @@ namespace CLEAN_Pl.Infrastructure.Persistence;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
+    private readonly IConfiguration _configuration;
     private IDbContextTransaction? _transaction;
 
     private IProductRepository? _products;
@@ -19,9 +22,11 @@ public class UnitOfWork : IUnitOfWork
     private IPermissionRepository? _permissions;
     private ICategoryRepository? _categories;
     private IAuditLogRepository? _auditLogs;
-    public UnitOfWork(ApplicationDbContext context)
+
+    public UnitOfWork(ApplicationDbContext context, IConfiguration configuration)
     {
         _context = context;
+        _configuration = configuration;
     }
 
     #region Repositories
@@ -39,7 +44,7 @@ public class UnitOfWork : IUnitOfWork
     {
         get
         {
-            _users ??= new UserRepository(_context);
+            _users ??= new UserRepository(_context, _configuration);
             return _users;
         }
     }
@@ -134,17 +139,21 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
     {
-        await BeginTransactionAsync(ct);
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            await action();
-            await CommitAsync(ct);
-        }
-        catch
-        {
-            await RollbackAsync(ct);
-            throw;
-        }
+            await BeginTransactionAsync(ct);
+            try
+            {
+                await action();
+                await CommitAsync(ct);
+            }
+            catch
+            {
+                await RollbackAsync(ct);
+                throw;
+            }
+        });
     }
 
     /// <summary>
@@ -152,18 +161,22 @@ public class UnitOfWork : IUnitOfWork
     /// </summary>
     public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken ct = default)
     {
-        await BeginTransactionAsync(ct);
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            var result = await action();
-            await CommitAsync(ct);
-            return result;
-        }
-        catch
-        {
-            await RollbackAsync(ct);
-            throw;
-        }
+            await BeginTransactionAsync(ct);
+            try
+            {
+                var result = await action();
+                await CommitAsync(ct);
+                return result;
+            }
+            catch
+            {
+                await RollbackAsync(ct);
+                throw;
+            }
+        });
     }
 
     #endregion

@@ -62,6 +62,10 @@ public class DbSeeder
             Domain.Entities.Permission.Create("User.Read", "User", SystemConstants.Actions.Read, "View users"),
             Domain.Entities.Permission.Create("User.Update", "User", SystemConstants.Actions.Update, "Update users"),
             Domain.Entities.Permission.Create("User.Delete", "User", SystemConstants.Actions.Delete, "Delete users"),
+            Domain.Entities.Permission.Create("User.ReadPermissions", "User", "ReadPermissions", "View user permissions"),
+            Domain.Entities.Permission.Create("User.GrantPermission", "User", "GrantPermission", "Grant additional permissions to specific users"),
+            Domain.Entities.Permission.Create("User.DenyPermission", "User", "DenyPermission", "Deny/revoke permissions from specific users"),
+            Domain.Entities.Permission.Create("User.RevokePermission", "User", "RevokePermission", "Revoke user-specific permission overrides"),
 
             // Role Permissions
             Domain.Entities.Permission.Create("Role.Create", "Role", SystemConstants.Actions.Create, "Create new roles"),
