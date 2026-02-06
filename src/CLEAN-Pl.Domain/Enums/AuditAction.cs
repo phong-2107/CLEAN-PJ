@@ -5,5 +5,8 @@ public enum AuditAction
 {
     Create = 1,
     Update = 2,
-    Delete = 3
+    Delete = 3,
+    GrantPermission = 4,
+    DenyPermission = 5,
+    RevokePermission = 6
 }

@@ -12,6 +12,7 @@ public class Permission : AuditableEntity
 
     // Navigation properties
     public virtual ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
+    public virtual ICollection<UserPermission> UserPermissions { get; private set; } = new List<UserPermission>();
 
     private Permission() { }
 
