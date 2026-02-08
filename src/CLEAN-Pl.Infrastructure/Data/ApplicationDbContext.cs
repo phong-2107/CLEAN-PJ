@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Domain.Entities.Permission> Permissions => Set<Domain.Entities.Permission>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
    

@@ -17,6 +17,11 @@ public class User : AuditableEntity
     public DateTime? RefreshTokenExpiryTime { get; private set; }
 
     public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
+    
+    // User-specific permission overrides (Hybrid RBAC + ABAC)
+    public virtual ICollection<UserPermission> UserPermissions { get; private set; } = new List<UserPermission>();
+    public virtual ICollection<UserPermission> AssignedPermissions { get; private set; } = new List<UserPermission>();
+    public virtual ICollection<UserPermission> RevokedPermissions { get; private set; } = new List<UserPermission>();
 
     public string FullName => string.IsNullOrEmpty(FirstName) && string.IsNullOrEmpty(LastName)
         ? Username

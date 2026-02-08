@@ -20,6 +20,8 @@ import { cn } from '../../utils/cn';
 import userService from '../../services/userService';
 import { UserDto } from '../../types/user';
 import { UserFormModal } from '../../components/modals/UserFormModal';
+import { UserPermissionManagementModal } from '../../components/modals/UserPermissionManagementModal';
+import { UserDetailModal } from '../../components/modals/UserDetailModal';
 
 export const UsersPage = () => {
     const [users, setUsers] = useState<UserDto[]>([]);
@@ -31,6 +33,15 @@ export const UsersPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
     const [selectedUser, setSelectedUser] = useState<UserDto | null>(null);
+
+    // Permission Modal state
+    const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+    const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<UserDto | null>(null);
+    const [permissionModalTab, setPermissionModalTab] = useState<'effective' | 'grant' | 'deny'>('effective');
+
+    // Detail Modal state
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedUserForDetail, setSelectedUserForDetail] = useState<UserDto | null>(null);
 
     // Fetch users from API
     const fetchUsers = useCallback(async () => {
@@ -77,6 +88,30 @@ export const UsersPage = () => {
             setError('Failed to delete user');
         }
     }, []);
+
+    // Handle manage permissions directly (from table action)
+    const handleManagePermissions = useCallback((user: UserDto, e?: React.MouseEvent) => {
+        e?.stopPropagation(); // Prevent row click
+        setSelectedUserForPermissions(user);
+        setPermissionModalTab('effective');
+        setIsPermissionModalOpen(true);
+    }, []);
+
+    // Handle row click -> Open Detail Modal
+    const handleRowClick = useCallback((user: UserDto) => {
+        setSelectedUserForDetail(user);
+        setIsDetailModalOpen(true);
+    }, []);
+
+    // Handle transitions from Detail Modal
+    const handleOpenPermissionFromDetail = useCallback((tab: 'effective' | 'grant') => {
+        if (selectedUserForDetail) {
+            setSelectedUserForPermissions(selectedUserForDetail);
+            setPermissionModalTab(tab);
+            setIsDetailModalOpen(false);
+            setIsPermissionModalOpen(true);
+        }
+    }, [selectedUserForDetail]);
 
     // Handle form submit
     const handleFormSubmit = useCallback(async (data: any) => {
@@ -254,16 +289,30 @@ export const UsersPage = () => {
                         <DataTable
                             columns={columns}
                             data={filteredUsers}
+                            onRowClick={handleRowClick}
                             renderActions={(user) => (
                                 <div className="flex justify-end gap-2">
                                     <button
-                                        onClick={() => handleEditUser(user)}
+                                        onClick={(e) => handleManagePermissions(user, e)}
+                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Manage Permissions"
+                                    >
+                                        <Shield className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditUser(user);
+                                        }}
                                         className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                                     >
                                         <Edit className="h-4 w-4" />
                                     </button>
                                     <button
-                                        onClick={() => handleDeleteUser(user.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteUser(user.id);
+                                        }}
                                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                     >
                                         <Trash2 className="h-4 w-4" />
@@ -290,6 +339,28 @@ export const UsersPage = () => {
                     roleIds: []
                 } : undefined}
             />
+
+            {/* User Permission Management Modal */}
+            {selectedUserForPermissions && (
+                <UserPermissionManagementModal
+                    isOpen={isPermissionModalOpen}
+                    onClose={() => setIsPermissionModalOpen(false)}
+                    userId={selectedUserForPermissions.id}
+                    userName={selectedUserForPermissions.fullName || selectedUserForPermissions.username}
+                    initialTab={permissionModalTab}
+                />
+            )}
+
+            {/* User Detail Modal */}
+            {selectedUserForDetail && (
+                <UserDetailModal
+                    isOpen={isDetailModalOpen}
+                    onClose={() => setIsDetailModalOpen(false)}
+                    user={selectedUserForDetail}
+                    onViewPermissions={() => handleOpenPermissionFromDetail('effective')}
+                    onAddPermission={() => handleOpenPermissionFromDetail('grant')}
+                />
+            )}
         </div>
     );
 };

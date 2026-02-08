@@ -12,10 +12,6 @@ namespace CLEAN_Pl.API.Attributes;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public class PermissionAttribute : Attribute, IAsyncAuthorizationFilter
 {
-    /// <summary>
-    /// Gets the permission string (e.g., "Product.Read").
-    /// Made public for reflection-based auto-discovery by PermissionDiscoveryService.
-    /// </summary>
     public string Permission { get; }
 
     public PermissionAttribute(string permission)

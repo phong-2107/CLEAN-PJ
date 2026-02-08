@@ -40,7 +40,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => src.RolePermissions.Select(rp => rp.Permission.GetPermissionString())));
 
         // Permission mappings
-        CreateMap<Domain.Entities.Permission, PermissionDto>()
+        CreateMap<Domain.Entities.Permission, DTOs.Permission.PermissionDto>()
             .ForMember(dest => dest.PermissionString,
                 opt => opt.MapFrom(src => src.GetPermissionString()));
     }

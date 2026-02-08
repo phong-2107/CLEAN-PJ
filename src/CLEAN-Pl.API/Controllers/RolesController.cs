@@ -54,8 +54,16 @@ public class RolesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleDto dto)
     {
-        var role = await _roleService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
+        try
+        {
+            var role = await _roleService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating role: {Message}", ex.Message);
+            return StatusCode(500, new { message = ex.Message, stackTrace = ex.StackTrace, type = ex.GetType().Name });
+        }
     }
 
     // Update role
