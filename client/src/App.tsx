@@ -13,6 +13,10 @@ import { PermissionsPage } from './pages/Dashboard/PermissionsPage';
 import { SettingsPage } from './pages/Dashboard/SettingsPage';
 import { AuditLogsPage } from './pages/Dashboard/AuditLogsPage';
 import { PlaceholderPage } from './pages/Dashboard/PlaceholderPage';
+import { PublicProductDetailPage } from './pages/Products/PublicProductDetailPage';
+import { AboutPage } from './pages/Public/AboutPage';
+import { ContactPage } from './pages/Public/ContactPage';
+import { NotFoundPage } from './pages/Public/NotFoundPage';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { useAuthStore } from './store/useAuthStore';
 
@@ -44,6 +48,10 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+
+                <Route path="/products/:id" element={<PublicProductDetailPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
 
                 {/* Admin-Only Dashboard Routes */}
                 <Route
@@ -79,8 +87,8 @@ function App() {
                     <Route path="billing" element={<PlaceholderPage title="Billing" description="View subscription plans and payment history." />} />
                 </Route>
 
-                {/* Catch all - redirect to home */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* Catch all - 404 */}
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Router>
     )
